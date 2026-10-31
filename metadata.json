@@ -1,0 +1,6 @@
+{
+  "name": "Luna 0.1 — Portfolio Intelligence",
+  "description": "AI-powered project portfolio intelligence dashboard with conversational updates, snapshot audit trails, performance scoring, and proactive insights.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
