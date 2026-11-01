@@ -46,60 +46,51 @@ export function getHealthBadgeColor(score: number): {
     return {
       bg: 'bg-emerald-50',
       text: 'text-emerald-700',
-      border: 'border-emerald-200',
+      border: 'border-emerald-200/60',
       label: 'Excellent',
     };
   }
   if (score >= 75) {
     return {
-      bg: 'bg-teal-50',
-      text: 'text-teal-700',
-      border: 'border-teal-200',
+      bg: 'bg-zinc-100',
+      text: 'text-zinc-800',
+      border: 'border-zinc-200/60',
       label: 'Healthy',
     };
   }
   if (score >= 60) {
     return {
       bg: 'bg-amber-50',
-      text: 'text-amber-700',
-      border: 'border-amber-200',
+      text: 'text-amber-800',
+      border: 'border-amber-200/60',
       label: 'Attention',
     };
   }
   if (score >= 40) {
     return {
       bg: 'bg-orange-50',
-      text: 'text-orange-700',
-      border: 'border-orange-200',
+      text: 'text-orange-800',
+      border: 'border-orange-200/60',
       label: 'At Risk',
     };
   }
   return {
     bg: 'bg-rose-50',
     text: 'text-rose-700',
-    border: 'border-rose-200',
+    border: 'border-rose-200/60',
     label: 'Critical',
   };
 }
 
 export function getStageColor(stage: string): string {
+  // Clean monochromatic stage styling
   switch (stage) {
-    case 'Idea':
-      return 'bg-purple-50 text-purple-700 border-purple-200';
-    case 'Design & Spec':
-      return 'bg-sky-50 text-sky-700 border-sky-200';
-    case 'MVP':
-      return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'Development':
-      return 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    case 'Beta Testing':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
     case 'Launch':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      return 'bg-zinc-900 text-white border-zinc-900';
     case 'Scaling':
-      return 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200';
+      return 'bg-zinc-100 text-zinc-900 border-zinc-200/60 font-semibold';
     default:
-      return 'bg-slate-50 text-slate-700 border-slate-200';
+      return 'bg-zinc-100 text-zinc-700 border-zinc-200/60';
   }
 }
 

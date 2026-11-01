@@ -28,9 +28,20 @@ import {
 } from './types';
 import { generatePortfolioInsights } from './services/api';
 
+const DATA_VERSION = 'v2_167cr_ai_enterprise';
+
 export default function App() {
-  // Local state with localStorage hydration
+  // Local state with localStorage hydration & automatic migration to 1.67 Cr portfolio
   const [projects, setProjects] = useState<Project[]>(() => {
+    const version = localStorage.getItem('luna_data_version');
+    if (version !== DATA_VERSION) {
+      localStorage.setItem('luna_data_version', DATA_VERSION);
+      localStorage.setItem('luna_projects', JSON.stringify(initialProjects));
+      localStorage.setItem('luna_snapshots', JSON.stringify(initialSnapshots));
+      localStorage.setItem('luna_update_records', JSON.stringify(initialUpdateRecords));
+      localStorage.setItem('luna_insights', JSON.stringify(initialInsights));
+      return initialProjects;
+    }
     const saved = localStorage.getItem('luna_projects');
     return saved ? JSON.parse(saved) : initialProjects;
   });
@@ -63,10 +74,25 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportModalConfig, setExportModalConfig] = useState<{
+    initialReportType?: 'portfolio' | 'audit_trail';
+    initialProjectId?: string;
+  }>({ initialReportType: 'portfolio', initialProjectId: 'all' });
   const [isMCPModalOpen, setIsMCPModalOpen] = useState(false);
   const [recentRecord, setRecentRecord] = useState<ProjectUpdateRecord | null>(null);
   const [prefillMessage, setPrefillMessage] = useState<string | undefined>(undefined);
   const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
+
+  const handleOpenExportModal = (config?: {
+    initialReportType?: 'portfolio' | 'audit_trail';
+    initialProjectId?: string;
+  }) => {
+    setExportModalConfig({
+      initialReportType: config?.initialReportType || 'portfolio',
+      initialProjectId: config?.initialProjectId || 'all',
+    });
+    setIsExportModalOpen(true);
+  };
 
   // Sync to localStorage
   useEffect(() => {
@@ -392,7 +418,7 @@ export default function App() {
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onOpenNewProject={() => setIsNewProjectModalOpen(true)}
-        onOpenExportModal={() => setIsExportModalOpen(true)}
+        onOpenExportModal={() => handleOpenExportModal({ initialReportType: 'portfolio' })}
         onOpenMCPModal={() => setIsMCPModalOpen(true)}
         onOpenAskLuna={() => {}}
         selectedCategory={selectedCategory}
@@ -401,7 +427,7 @@ export default function App() {
       />
 
       {/* Main App Body Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 sm:px-10 py-8 sm:py-10">
         {/* KPI Cards Section */}
         <KPISection
           projects={projects}
@@ -425,6 +451,28 @@ export default function App() {
           />
         )}
 
+        {/* Section Heading for Projects in Clean Minimalism */}
+        {viewMode !== 'audit' && (
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+                {selectedCategory === 'All' ? 'Active Projects' : `${selectedCategory} Projects`}
+              </h2>
+              <p className="text-xs text-slate-400 mt-1">
+                {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} tracked in real-time
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedStatus((prev) => (prev === 'archived' ? 'all' : 'archived'))}
+                className="text-xs font-semibold text-black hover:underline cursor-pointer"
+              >
+                {selectedStatus === 'archived' ? 'View Active Projects' : 'View Archive'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Active View Mode Content */}
         {viewMode === 'audit' ? (
           <AuditTrailView
@@ -433,6 +481,9 @@ export default function App() {
               const found = projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
               if (found) setSelectedProject(found);
             }}
+            onExportAuditTrail={() =>
+              handleOpenExportModal({ initialReportType: 'audit_trail', initialProjectId: 'all' })
+            }
           />
         ) : (
           <ProjectGrid
@@ -467,6 +518,9 @@ export default function App() {
           onUpdateMilestone={handleUpdateMilestone}
           onAddMilestone={handleAddMilestone}
           onQuickUpdate={handleQuickUpdate}
+          onExportAuditTrail={(projectId) =>
+            handleOpenExportModal({ initialReportType: 'audit_trail', initialProjectId: projectId })
+          }
         />
       )}
 
@@ -486,6 +540,8 @@ export default function App() {
         snapshots={snapshots}
         updateRecords={updateRecords}
         currency={currency}
+        initialReportType={exportModalConfig.initialReportType}
+        initialProjectId={exportModalConfig.initialProjectId}
       />
 
       {/* MCP Status Modal */}

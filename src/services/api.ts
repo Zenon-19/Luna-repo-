@@ -1,4 +1,5 @@
 import { Project, ProjectSnapshot, ProjectUpdateRecord, LunaInsight, AIParseResult } from '../types';
+import { formatCurrency } from '../utils/formatters';
 
 export async function parseNaturalLanguageUpdate(
   message: string,
@@ -65,8 +66,9 @@ export async function askLunaQuery(
     return await res.json();
   } catch (err) {
     console.warn('API error in askLunaQuery:', err);
+    const totalVal = projects.reduce((a, b) => a + (b.project_value || 0), 0);
     return {
-      answer: `I analyzed your portfolio of ${projects.length} projects. You have ₹${(projects.reduce((a, b) => a + b.project_value, 0) / 100000).toFixed(1)}L total value tracked.`,
+      answer: `I analyzed your portfolio of ${projects.length} projects. You have ${formatCurrency(totalVal, '₹')} total value tracked across enterprise AI, SaaS, and infrastructure initiatives.`,
     };
   }
 }

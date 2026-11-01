@@ -148,20 +148,20 @@ export const LunaDock: React.FC<LunaDockProps> = ({
 
   const samplePrompts = [
     {
-      label: 'Flownest: 68% + ₹8L',
-      prompt: 'Flownest completed the CRM onboarding module today. Progress should be 68%. We also got positive feedback from three potential clients. Estimated value is now ₹8 lakh.',
+      label: 'Aetherius: 85% + ₹36L',
+      prompt: 'Aetherius Enterprise Cortex completed SOC-2 Type II audit. Progress is now 85%, value updated to ₹36 lakh.',
     },
     {
-      label: 'Celesti: 80% + ₹12L',
-      prompt: 'Celesti website development is 80% complete. We finished the dashboard and 3D product showcase. Estimated project value is now ₹12 lakh.',
+      label: 'Nexus: 92% + ₹26L',
+      prompt: 'Nexus Sentinel AI finished enterprise SIEM streaming. Progress 92%, estimated value ₹26L.',
+    },
+    {
+      label: 'CogniLegal: Redline Engine',
+      prompt: 'CogniLegal Engine completed the automated redlining editor. Progress 75%, value now ₹18 lakh.',
     },
     {
       label: 'NovaPay: GA Launch Pilot',
-      prompt: 'NovaPay tax automation module is complete. Processed ₹42L test volume. Progress 95%, estimated value ₹25L.',
-    },
-    {
-      label: 'PysDev: Delayed 2 weeks',
-      prompt: 'PysDev Studio marketplace review delayed by 2 weeks due to permission issues. Health dropped to 64, progress 44%.',
+      prompt: 'NovaPay tax automation module is complete. Processed ₹42L test volume. Progress 95%, estimated value ₹28L.',
     },
   ];
 
@@ -219,28 +219,28 @@ export const LunaDock: React.FC<LunaDockProps> = ({
 
         {/* Recent Update Feedback Toast */}
         {recentRecord && !pendingConfirmation && !answerResponse && (
-          <div className="mb-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl px-3.5 py-2.5 flex items-center justify-between text-xs text-slate-800 shadow-xl animate-in fade-in slide-in-from-bottom-2">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="mb-2 bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-2xl px-4 py-3 flex items-center justify-between text-xs text-slate-800 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-slate-900 shrink-0" />
               <span className="font-semibold text-black">
                 {recentRecord.project_name}:
               </span>
               <span className="text-slate-600 line-clamp-1">{recentRecord.ai_summary}</span>
             </div>
-            <span className="text-[10px] text-slate-400 font-mono shrink-0 ml-2">Audit Log Saved</span>
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider shrink-0 ml-3">Audit Log Saved</span>
           </div>
         )}
 
         {/* Main Dock Container */}
-        <div className="relative bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-2xl shadow-2xl p-3 sm:p-4 transition-all">
+        <div className="relative bg-white border border-slate-200/90 rounded-2xl shadow-xl p-4 sm:p-5 transition-all">
           {/* Top Bar inside dock: Mode switcher & Quick Prompt Chips */}
-          <div className="flex items-center justify-between gap-2 mb-2.5">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2.5">
               <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-medium">
                 <button
                   type="button"
                   onClick={() => setMode('update')}
-                  className={`px-3 py-1 rounded-lg transition-all ${
+                  className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
                     mode === 'update'
                       ? 'bg-black text-white font-semibold shadow-xs'
                       : 'text-slate-500 hover:text-black'
@@ -251,7 +251,7 @@ export const LunaDock: React.FC<LunaDockProps> = ({
                 <button
                   type="button"
                   onClick={() => setMode('ask')}
-                  className={`px-3 py-1 rounded-lg transition-all ${
+                  className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
                     mode === 'ask'
                       ? 'bg-black text-white font-semibold shadow-xs'
                       : 'text-slate-500 hover:text-black'
@@ -261,9 +261,9 @@ export const LunaDock: React.FC<LunaDockProps> = ({
                 </button>
               </div>
 
-              <span className="hidden sm:inline-block text-[11px] text-slate-400 font-medium">
+              <span className="hidden sm:inline-block text-xs text-slate-400 font-medium">
                 {mode === 'update'
-                  ? 'Describe progress, values, or milestones'
+                  ? 'Describe progress, valuation deltas, or milestones'
                   : 'Ask portfolio questions'}
               </span>
             </div>
@@ -272,9 +272,9 @@ export const LunaDock: React.FC<LunaDockProps> = ({
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-slate-500 hover:text-black text-xs flex items-center gap-1 px-1.5 py-0.5"
+              className="text-slate-400 hover:text-black text-xs flex items-center gap-1 px-2 py-1 cursor-pointer"
             >
-              <span className="hidden sm:inline text-[11px] font-medium">
+              <span className="hidden sm:inline text-xs font-semibold">
                 {isExpanded ? 'Hide Samples' : 'Quick Samples'}
               </span>
               {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
@@ -283,8 +283,8 @@ export const LunaDock: React.FC<LunaDockProps> = ({
 
           {/* Quick Prompt Chips */}
           {isExpanded && (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none text-[11px]">
-              <span className="text-slate-400 shrink-0 text-[10px] uppercase font-semibold">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2.5 mb-2.5 scrollbar-none text-xs">
+              <span className="text-slate-400 shrink-0 text-[10px] uppercase font-bold tracking-wider">
                 Try:
               </span>
               {samplePrompts.map((s, idx) => (
@@ -296,7 +296,7 @@ export const LunaDock: React.FC<LunaDockProps> = ({
                     setMode('update');
                     if (inputRef.current) inputRef.current.focus();
                   }}
-                  className="shrink-0 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-black transition-all cursor-pointer font-medium"
+                  className="shrink-0 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-black hover:text-white text-slate-600 transition-all cursor-pointer font-medium text-xs"
                 >
                   {s.label}
                 </button>
@@ -305,9 +305,9 @@ export const LunaDock: React.FC<LunaDockProps> = ({
           )}
 
           {/* Natural Language Input Form */}
-          <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          <form onSubmit={handleSubmit} className="flex items-center gap-2.5">
             <div className="relative flex-1">
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center text-slate-400">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center text-slate-400">
                 <Sparkles className={`w-4 h-4 ${isProcessing ? 'animate-spin text-black' : ''}`} />
               </div>
 
@@ -318,10 +318,10 @@ export const LunaDock: React.FC<LunaDockProps> = ({
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder={
                   mode === 'update'
-                    ? '“Celesti website development is 80% complete. Estimated value is now ₹12 lakh.”'
-                    : '“Which project is progressing fastest, and what is our total Q3 pipeline?”'
+                    ? 'Tell Luna what changed... (e.g. Celesti is now 80% complete, valuation ₹12L)'
+                    : 'Ask Luna anything... (e.g. Which enterprise project has the highest velocity?)'
                 }
-                className="w-full bg-slate-50 border border-slate-200 focus:border-black focus:ring-1 focus:ring-black rounded-xl pl-10 pr-12 py-2.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-all shadow-xs"
+                className="w-full bg-slate-50/70 border border-slate-200 focus:bg-white focus:border-black focus:ring-1 focus:ring-black rounded-2xl pl-11 pr-14 py-3.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-all shadow-xs"
                 disabled={isProcessing}
               />
 
@@ -329,7 +329,7 @@ export const LunaDock: React.FC<LunaDockProps> = ({
               <button
                 type="button"
                 onClick={toggleListening}
-                className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-xs transition-colors ${
+                className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl text-xs transition-colors cursor-pointer ${
                   isListening
                     ? 'bg-rose-50 text-rose-700 animate-pulse border border-rose-200'
                     : 'text-slate-400 hover:text-black hover:bg-slate-100'
@@ -344,7 +344,7 @@ export const LunaDock: React.FC<LunaDockProps> = ({
             <button
               type="submit"
               disabled={!inputMessage.trim() || isProcessing}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-black hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-semibold shadow-xs transition-all cursor-pointer shrink-0"
+              className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-black hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer shrink-0"
             >
               {isProcessing ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -352,7 +352,7 @@ export const LunaDock: React.FC<LunaDockProps> = ({
                 <>
                   <Send className="w-4 h-4" />
                   <span className="hidden sm:inline">
-                    {mode === 'update' ? 'Update Luna' : 'Ask'}
+                    {mode === 'update' ? 'Send Update' : 'Ask'}
                   </span>
                 </>
               )}

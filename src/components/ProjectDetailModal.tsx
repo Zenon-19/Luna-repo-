@@ -32,6 +32,7 @@ interface ProjectDetailModalProps {
   onUpdateMilestone: (projectId: string, milestoneId: string, completed: boolean) => void;
   onAddMilestone: (projectId: string, title: string, targetDate: string) => void;
   onQuickUpdate: (projectName: string) => void;
+  onExportAuditTrail?: (projectId: string) => void;
 }
 
 export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
@@ -43,6 +44,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   onUpdateMilestone,
   onAddMilestone,
   onQuickUpdate,
+  onExportAuditTrail,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'progress' | 'financials' | 'milestones' | 'audit'>(
     'overview'
@@ -77,43 +79,38 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] my-auto text-slate-900">
+      <div className="relative w-full max-w-4xl bg-white border border-slate-100 rounded-3xl shadow-xl overflow-hidden flex flex-col max-h-[90vh] my-auto text-slate-900">
         {/* Top Header */}
-        <div className="p-6 border-b border-slate-100 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-7 sm:p-8 border-b border-slate-100 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg text-white shadow-xs"
-              style={{
-                backgroundColor: project.color || '#000000',
-              }}
+              className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200/60 flex items-center justify-center font-bold text-base text-black shadow-xs"
             >
               {project.name.slice(0, 2).toUpperCase()}
             </div>
             <div>
               <div className="flex items-center gap-2.5">
                 <h2 className="text-xl font-bold text-[#0A0A0A] tracking-tight">{project.name}</h2>
-                <span className={`text-xs font-medium px-2.5 py-0.5 rounded-lg border ${stageBadge}`}>
-                  {project.stage}
+                <span className="text-xs text-slate-400 font-medium">
+                  · {project.stage} Stage
                 </span>
-                <span
-                  className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${healthBadge.bg} ${healthBadge.text} ${healthBadge.border}`}
-                >
-                  {project.health_score}/100 • {healthBadge.label}
+                <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold">
+                  {project.health_score}/100 {healthBadge.label}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-1">
-                {project.category} • Owned by {project.owner} • Started {project.start_date}
+                {project.category} · Owned by {project.owner} · Started {project.start_date}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center gap-2.5 self-end sm:self-auto">
             <button
               onClick={() => {
                 onClose();
                 onQuickUpdate(project.name);
               }}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Update with Luna</span>
@@ -128,12 +125,12 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1 px-6 pt-2 bg-slate-50/40 border-b border-slate-100 overflow-x-auto text-xs font-medium">
+        <div className="flex items-center gap-2 px-7 sm:px-8 bg-white border-b border-slate-100 overflow-x-auto text-xs font-semibold">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`px-3.5 py-2.5 border-b-2 transition-all cursor-pointer ${
+            className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 ${
               activeTab === 'overview'
-                ? 'border-black text-black font-semibold'
+                ? 'border-black text-black'
                 : 'border-transparent text-slate-400 hover:text-black'
             }`}
           >
@@ -141,9 +138,9 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('progress')}
-            className={`px-3.5 py-2.5 border-b-2 transition-all cursor-pointer ${
+            className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 ${
               activeTab === 'progress'
-                ? 'border-black text-black font-semibold'
+                ? 'border-black text-black'
                 : 'border-transparent text-slate-400 hover:text-black'
             }`}
           >
@@ -151,9 +148,9 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('financials')}
-            className={`px-3.5 py-2.5 border-b-2 transition-all cursor-pointer ${
+            className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 ${
               activeTab === 'financials'
-                ? 'border-black text-black font-semibold'
+                ? 'border-black text-black'
                 : 'border-transparent text-slate-400 hover:text-black'
             }`}
           >
@@ -161,9 +158,9 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('milestones')}
-            className={`px-3.5 py-2.5 border-b-2 transition-all cursor-pointer ${
+            className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 ${
               activeTab === 'milestones'
-                ? 'border-black text-black font-semibold'
+                ? 'border-black text-black'
                 : 'border-transparent text-slate-400 hover:text-black'
             }`}
           >
@@ -171,9 +168,9 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('audit')}
-            className={`px-3.5 py-2.5 border-b-2 transition-all cursor-pointer ${
+            className={`py-3.5 border-b-2 transition-all cursor-pointer ${
               activeTab === 'audit'
-                ? 'border-black text-black font-semibold'
+                ? 'border-black text-black'
                 : 'border-transparent text-slate-400 hover:text-black'
             }`}
           >
@@ -182,13 +179,13 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         </div>
 
         {/* Modal Body Content */}
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-7 sm:p-8 overflow-y-auto space-y-6">
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Description Card */}
-              <div className="bg-slate-50/60 border border-slate-100 rounded-2xl p-5 shadow-xs">
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-6 shadow-xs">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
                   Project Mission & Overview
                 </h4>
                 <p className="text-sm text-slate-700 leading-relaxed">{project.description}</p>
@@ -196,7 +193,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   {project.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 mono-num"
+                      className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs text-slate-600 font-medium"
                     >
                       #{tag}
                     </span>
@@ -205,31 +202,31 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               </div>
 
               {/* High Level 3-Metric Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-slate-50/60 border border-slate-100 rounded-2xl p-4.5 shadow-xs">
-                  <span className="text-[11px] text-slate-400 uppercase font-semibold">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
                     Current Progress
                   </span>
                   <div className="text-2xl font-bold text-[#0A0A0A] mono-num mt-1">
                     {project.progress_percentage}%
                   </div>
-                  <span className="text-xs text-emerald-600 font-semibold mt-1 block">
-                    +{project.progress_delta_month}% from last month
+                  <span className="text-xs text-emerald-600 font-bold mt-1 block">
+                    +{project.progress_delta_month}% vs last month
                   </span>
                 </div>
-                <div className="bg-slate-50/60 border border-slate-100 rounded-2xl p-4.5 shadow-xs">
-                  <span className="text-[11px] text-slate-400 uppercase font-semibold">
+                <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
                     Estimated Valuation
                   </span>
                   <div className="text-2xl font-bold text-[#0A0A0A] mono-num mt-1">
                     {formatCurrency(project.project_value, currency)}
                   </div>
-                  <span className="text-xs text-emerald-600 font-semibold mt-1 block">
+                  <span className="text-xs text-emerald-600 font-bold mt-1 block">
                     +{formatCurrency(project.value_delta_month, currency)} MoM
                   </span>
                 </div>
-                <div className="bg-slate-50/60 border border-slate-100 rounded-2xl p-4.5 shadow-xs">
-                  <span className="text-[11px] text-slate-400 uppercase font-semibold">
+                <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-5 shadow-xs">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">
                     Target Completion
                   </span>
                   <div className="text-lg font-bold text-[#0A0A0A] mono-num mt-1">
@@ -461,13 +458,30 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           {/* TAB 5: AUDIT TRAIL */}
           {activeTab === 'audit' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Natural-Language Audit Trail
-                </span>
-                <span className="text-[11px] text-slate-400 mono-num font-medium">
-                  {projectAuditRecords.length} Saved Records
-                </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                    Natural-Language Audit Trail
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {projectAuditRecords.length} recorded events for {project.name}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {onExportAuditTrail && (
+                    <button
+                      onClick={() => onExportAuditTrail(project.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Export & Copy Audit (.md)</span>
+                    </button>
+                  )}
+                  <span className="text-[11px] text-slate-500 mono-num font-semibold bg-slate-100 px-2.5 py-1 rounded-lg">
+                    {projectAuditRecords.length} Records
+                  </span>
+                </div>
               </div>
 
               {projectAuditRecords.length === 0 ? (

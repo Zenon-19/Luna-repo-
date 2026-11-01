@@ -16,58 +16,81 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
   isRefreshing,
 }) => {
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl p-6 mb-8 shadow-xs">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-black">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-[#0A0A0A] tracking-tight">
-              Luna AI Proactive Intelligence
-            </h3>
-            <p className="text-[11px] text-slate-400">
-              Autonomous pattern detection across velocity, stagnation risks & valuation anomalies
-            </p>
-          </div>
+    <div className="bg-white border border-slate-100 rounded-2xl p-7 sm:p-8 mb-10 shadow-sm">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+            Luna AI Insights
+          </h3>
+          <p className="text-xs text-slate-400 mt-1">
+            Autonomous pattern detection across velocity, stagnation risks & valuation anomalies
+          </p>
         </div>
 
         <button
           onClick={onRefreshInsights}
           disabled={isRefreshing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-black hover:text-white text-slate-700 text-xs font-semibold transition-all cursor-pointer"
           title="Re-run AI Portfolio Analysis"
         >
-          <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-          <span className="text-[11px]">Re-analyze</span>
+          <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span>Re-analyze</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {insights.map((ins) => {
-          let badgeColor = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-          let icon = <TrendingUp className="w-3.5 h-3.5" />;
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {insights.map((ins, idx) => {
+          const isFeaturedDark = idx === 0;
 
-          if (ins.type === 'risk') {
-            badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
-            icon = <AlertTriangle className="w-3.5 h-3.5" />;
-          } else if (ins.type === 'discrepancy') {
-            badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
-            icon = <Info className="w-3.5 h-3.5" />;
+          if (isFeaturedDark) {
+            return (
+              <div
+                key={ins.id}
+                className="bg-slate-900 text-white rounded-2xl p-5 flex flex-col justify-between shadow-xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Top Velocity
+                    </span>
+                    {ins.project_name && (
+                      <span className="text-[11px] text-slate-300 font-medium">
+                        {ins.project_name}
+                      </span>
+                    )}
+                  </div>
+                  <h4 className="text-sm font-semibold text-white mb-2 leading-snug">
+                    {ins.title}
+                  </h4>
+                  <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                    {ins.description}
+                  </p>
+                </div>
+
+                {ins.action_prompt && (
+                  <button
+                    onClick={() => onApplyPrompt(ins.action_prompt!)}
+                    className="flex items-center justify-between w-full text-xs text-slate-300 hover:text-white font-semibold pt-3 border-t border-slate-800 transition-colors text-left cursor-pointer"
+                  >
+                    <span className="line-clamp-1">{ins.action_prompt}</span>
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0 ml-1.5" />
+                  </button>
+                )}
+              </div>
+            );
           }
 
           return (
             <div
               key={ins.id}
-              className="bg-slate-50/70 border border-slate-100 hover:border-slate-300 rounded-xl p-4 flex flex-col justify-between transition-all"
+              className="bg-white border border-slate-100 hover:border-black rounded-2xl p-5 flex flex-col justify-between transition-colors shadow-xs"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <span
-                    className={`flex items-center gap-1 text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md border ${badgeColor}`}
-                  >
-                    {icon}
-                    <span>{ins.type}</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                    ins.type === 'risk' ? 'text-rose-600' : 'text-slate-400'
+                  }`}>
+                    {ins.type === 'risk' ? 'Alert' : 'Notice'}
                   </span>
                   {ins.project_name && (
                     <span className="text-[11px] text-slate-400 font-medium">
@@ -76,10 +99,10 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
                   )}
                 </div>
 
-                <h4 className="text-xs font-semibold text-[#0A0A0A] mb-1.5 leading-snug">
+                <h4 className="text-sm font-semibold text-[#0A0A0A] mb-2 leading-snug">
                   {ins.title}
                 </h4>
-                <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                <p className="text-xs text-slate-500 leading-relaxed mb-4">
                   {ins.description}
                 </p>
               </div>
@@ -87,10 +110,10 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({
               {ins.action_prompt && (
                 <button
                   onClick={() => onApplyPrompt(ins.action_prompt!)}
-                  className="flex items-center justify-between w-full text-[11px] text-slate-700 hover:text-black font-semibold pt-2 border-t border-slate-200/60 transition-colors text-left"
+                  className="flex items-center justify-between w-full text-xs text-slate-700 hover:text-black font-semibold pt-3 border-t border-slate-100 transition-colors text-left cursor-pointer"
                 >
                   <span className="line-clamp-1">{ins.action_prompt}</span>
-                  <ArrowRight className="w-3 h-3 shrink-0 ml-1" />
+                  <ArrowRight className="w-3.5 h-3.5 shrink-0 ml-1.5" />
                 </button>
               )}
             </div>

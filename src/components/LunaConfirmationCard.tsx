@@ -18,21 +18,21 @@ export const LunaConfirmationCard: React.FC<LunaConfirmationCardProps> = ({
   onSelectAlternativeProject,
 }) => {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 text-slate-900">
-      <div className="flex items-start gap-3 mb-4">
-        <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0 mt-0.5">
+    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300 text-slate-900">
+      <div className="flex items-start gap-3.5 mb-4">
+        <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200/60 flex items-center justify-center text-black shrink-0 mt-0.5">
           <HelpCircle className="w-4 h-4" />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
-              Luna Needs Confirmation
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
+              Confirmation Required
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold mono-num">
-              Confidence: {Math.round(parseResult.confidence_score * 100)}%
+            <span className="text-xs text-slate-400 font-medium">
+              · Confidence: {Math.round(parseResult.confidence_score * 100)}%
             </span>
           </div>
-          <p className="text-sm text-[#0A0A0A] font-medium mt-1">
+          <p className="text-sm text-[#0A0A0A] font-semibold mt-1">
             {parseResult.clarification_question ||
               `I matched this to "${parseResult.target_project_name}". Would you like me to apply these updates?`}
           </p>

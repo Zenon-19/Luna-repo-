@@ -97,18 +97,18 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-white border border-slate-100 rounded-3xl shadow-2xl overflow-hidden text-slate-900">
+      <div className="relative w-full max-w-xl bg-white border border-slate-100 rounded-3xl shadow-xl overflow-hidden text-slate-900">
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="p-7 sm:p-8 border-b border-slate-100 bg-white flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center text-white">
               <Plus className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-[#0A0A0A] tracking-tight">
+              <h3 className="text-base font-bold text-[#0A0A0A] tracking-tight">
                 Add New Project to Portfolio
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Track valuation, milestones, progress & conversational audit trail
               </p>
             </div>
@@ -122,12 +122,12 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         </div>
 
         {/* Mode switcher */}
-        <div className="px-5 pt-3 pb-2 bg-slate-50/40 flex items-center gap-2 border-b border-slate-100 text-xs font-medium">
+        <div className="px-7 sm:px-8 py-3 bg-white flex items-center gap-2 border-b border-slate-100 text-xs font-semibold">
           <button
             onClick={() => setActiveMode('ai')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeMode === 'ai'
-                ? 'bg-black text-white font-semibold shadow-xs'
+                ? 'bg-black text-white shadow-xs'
                 : 'text-slate-500 hover:text-black'
             }`}
           >
@@ -136,9 +136,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
           </button>
           <button
             onClick={() => setActiveMode('manual')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
               activeMode === 'manual'
-                ? 'bg-black text-white font-semibold shadow-xs'
+                ? 'bg-black text-white shadow-xs'
                 : 'text-slate-500 hover:text-black'
             }`}
           >

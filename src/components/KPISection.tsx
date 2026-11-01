@@ -53,9 +53,9 @@ export const KPISection: React.FC<KPISectionProps> = ({
   const healthBadge = getHealthBadgeColor(avgHealth);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
       {/* 1. Total Projects Card */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs hover:border-slate-200 transition-all flex flex-col justify-between">
+      <div className="bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:border-black transition-colors flex flex-col justify-between">
         <div>
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
             Total Projects
@@ -66,46 +66,46 @@ export const KPISection: React.FC<KPISectionProps> = ({
           </div>
         </div>
 
-        {/* Status Filter Chips */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-100">
+        {/* Status Filter Tabs */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-4 border-t border-slate-100">
           <button
             onClick={() => onFilterStatus('active')}
-            className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               selectedStatus === 'active'
                 ? 'bg-black text-white font-semibold'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1.5" />
             {active} Active
           </button>
           <button
             onClick={() => onFilterStatus('completed')}
-            className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               selectedStatus === 'completed'
                 ? 'bg-black text-white font-semibold'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            <CheckCircle2 className="w-2.5 h-2.5 inline mr-1 text-emerald-600" />
+            <CheckCircle2 className="w-3 h-3 inline mr-1 text-slate-700" />
             {completed} Done
           </button>
           <button
             onClick={() => onFilterStatus('on_hold')}
-            className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               selectedStatus === 'on_hold'
                 ? 'bg-black text-white font-semibold'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            <PauseCircle className="w-2.5 h-2.5 inline mr-1 text-amber-600" />
+            <PauseCircle className="w-3 h-3 inline mr-1 text-slate-500" />
             {onHold} Hold
           </button>
         </div>
       </div>
 
       {/* 2. Portfolio Value Card */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs hover:border-slate-200 transition-all flex flex-col justify-between">
+      <div className="bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:border-black transition-colors flex flex-col justify-between">
         <div>
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
             Portfolio Value
@@ -116,21 +116,21 @@ export const KPISection: React.FC<KPISectionProps> = ({
             </div>
             <div className="text-[11px] text-emerald-600 font-bold mt-1 flex items-center">
               <ArrowUpRight className="w-3 h-3 mr-0.5" />
-              ↑ 12.4% vs last month
+              ↑ 12.4% vs July
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-100">
           <div>
             <span className="text-slate-400">Realized: </span>
-            <span className="text-slate-800 font-semibold mono-num">
+            <span className="text-slate-900 font-semibold mono-num">
               {formatCurrency(realizedValue, currency)}
             </span>
           </div>
           <div>
             <span className="text-slate-400">Pipeline: </span>
-            <span className="text-emerald-700 font-semibold mono-num">
+            <span className="text-slate-900 font-semibold mono-num">
               {formatCurrency(potentialValue, currency)}
             </span>
           </div>
@@ -138,7 +138,7 @@ export const KPISection: React.FC<KPISectionProps> = ({
       </div>
 
       {/* 3. Overall Progress Card */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs hover:border-slate-200 transition-all flex flex-col justify-between">
+      <div className="bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:border-black transition-colors flex flex-col justify-between">
         <div>
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
             Overall Progress
@@ -154,34 +154,32 @@ export const KPISection: React.FC<KPISectionProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-slate-400 pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-100">
           <span>+8% MoM velocity</span>
           <span className="text-slate-700 font-medium">{active} active streams</span>
         </div>
       </div>
 
       {/* 4. Health Score Card */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs hover:border-slate-200 transition-all flex flex-col justify-between">
+      <div className="bg-white p-7 rounded-2xl border border-slate-100 shadow-sm hover:border-black transition-colors flex flex-col justify-between">
         <div>
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
             Health Score
           </div>
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-3xl font-semibold text-[#0A0A0A] mono-num">{avgHealth}</span>
-            <span
-              className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${healthBadge.bg} ${healthBadge.text} ${healthBadge.border}`}
-            >
+            <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold">
               {healthBadge.label}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-3 border-t border-slate-100">
-          <div className="flex items-center gap-1">
-            <Activity className="w-3 h-3 text-emerald-600" />
+        <div className="flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-100">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span>Velocity: High</span>
           </div>
-          <span className="text-slate-500 font-medium">0 Critical risks</span>
+          <span className="text-slate-400 font-medium">0 Critical risks</span>
         </div>
       </div>
     </div>
