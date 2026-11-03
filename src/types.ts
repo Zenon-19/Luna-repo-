@@ -18,7 +18,10 @@ export type ProjectStage =
   | 'Development'
   | 'Beta Testing'
   | 'Launch'
-  | 'Scaling';
+  | 'Scaling'
+  | 'Delivered'
+  | 'Production'
+  | 'Completed';
 
 export type HealthStatus = 'Excellent' | 'Healthy' | 'Attention Required' | 'At Risk' | 'Critical';
 

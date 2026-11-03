@@ -440,6 +440,20 @@ function generateHeuristicInsights(projects: any[]) {
   const insights: any[] = [];
   if (projects.length === 0) return insights;
 
+  // 100% portfolio completion check
+  if (projects.length > 0 && projects.every((p: any) => p.status === 'completed' || p.progress_percentage === 100)) {
+    insights.push({
+      id: 'ins-all-completed-2026',
+      type: 'milestone',
+      title: '100% Portfolio Completed in 2026',
+      description: `All ${projects.length} projects have reached 100% progress and final delivery ending this year.`,
+      project_id: projects[0]?.id || '',
+      project_name: 'Portfolio Milestone',
+      impact: 'high',
+      action_prompt: 'Export Annual 2026 Portfolio Completion Audit Report',
+    });
+  }
+
   // Fastest growing
   const sorted = [...projects].sort((a, b) => (b.progress_percentage || 0) - (a.progress_percentage || 0));
   if (sorted[0]) {

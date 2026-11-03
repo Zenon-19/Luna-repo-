@@ -1,11 +1,13 @@
 import React from 'react';
-import { LayoutGrid, ListFilter, Calendar, Plus, Sparkles, CheckCircle2, Clock } from 'lucide-react';
-import { Project } from '../types';
+import { LayoutGrid, ListFilter, Calendar, Plus, Sparkles, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { Project, ProjectSnapshot } from '../types';
 import { ProjectCard } from './ProjectCard';
 import { formatCurrency, getHealthBadgeColor, getStageColor } from '../utils/formatters';
+import { checkProjectStagnation } from '../utils/alerts';
 
 interface ProjectGridProps {
   projects: Project[];
+  snapshots?: ProjectSnapshot[];
   currency: string;
   viewMode: 'grid' | 'table' | 'timeline' | 'audit';
   onSelectProject: (project: Project) => void;
@@ -15,6 +17,7 @@ interface ProjectGridProps {
 
 export const ProjectGrid: React.FC<ProjectGridProps> = ({
   projects,
+  snapshots = [],
   currency,
   viewMode,
   onSelectProject,
@@ -50,6 +53,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
           <ProjectCard
             key={project.id}
             project={project}
+            snapshots={snapshots}
             currency={currency}
             onClick={() => onSelectProject(project)}
             onQuickUpdate={onQuickUpdate}
@@ -80,6 +84,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
             <tbody className="divide-y divide-slate-100">
               {projects.map((p) => {
                 const health = getHealthBadgeColor(p.health_score);
+                const stagnation = checkProjectStagnation(p, snapshots);
                 return (
                   <tr
                     key={p.id}
@@ -89,10 +94,19 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                     <td className="py-4 px-6 font-semibold text-[#0A0A0A]">
                       <div className="flex items-center gap-3">
                         <div
-                          className="w-2.5 h-2.5 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: p.color || '#000000' }}
                         />
                         <span className="text-sm font-semibold tracking-tight">{p.name}</span>
+                        {stagnation.isStagnant && (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 text-[10px] font-semibold"
+                            title={stagnation.reason}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            <span>Stagnant ({stagnation.stagnantDays}d)</span>
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-4 px-6 text-slate-400">{p.category}</td>
@@ -105,22 +119,38 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                       <div className="flex items-center gap-2.5">
                         <div className="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden">
                           <div
-                            className="bg-black h-1.5 rounded-full"
+                            className={`h-1.5 rounded-full ${
+                              stagnation.isStagnant ? 'bg-amber-600' : 'bg-black'
+                            }`}
                             style={{ width: `${p.progress_percentage}%` }}
                           />
                         </div>
                         <span className="mono-num text-slate-900 text-xs font-semibold">
                           {p.progress_percentage}%
                         </span>
+                        {stagnation.isStagnant && (
+                          <span
+                            className="text-[10px] text-amber-700 font-bold"
+                            title={stagnation.reason}
+                          >
+                            · {stagnation.stagnantDays}d frozen
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-4 px-6 mono-num font-semibold text-sm text-[#0A0A0A]">
                       {formatCurrency(p.project_value, currency)}
                     </td>
                     <td className="py-4 px-6">
-                      <span className="text-emerald-600 font-bold mono-num text-xs">
-                        ↑ {p.performance_score}/100
-                      </span>
+                      {stagnation.isStagnant ? (
+                        <span className="text-amber-700 font-bold mono-num text-xs">
+                          → {p.performance_score}/100
+                        </span>
+                      ) : (
+                        <span className="text-emerald-600 font-bold mono-num text-xs">
+                          ↑ {p.performance_score}/100
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 px-6">
                       <span className="text-xs font-semibold text-[#0A0A0A] mono-num">
@@ -151,30 +181,43 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
   // 3. Milestone Roadmap View
   return (
     <div className="space-y-5 mb-10">
-      {projects.map((project) => (
-        <div
-          key={project.id}
-          className="bg-white border border-slate-100 rounded-2xl p-6 hover:border-black transition-colors shadow-sm"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: project.color || '#000000' }}
-              />
-              <h4 className="font-semibold text-base text-[#0A0A0A] tracking-tight">{project.name}</h4>
-              <span className="text-xs text-slate-400">({project.category})</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-semibold mono-num">
-                {project.progress_percentage}%
-              </span>
+      {projects.map((project) => {
+        const stagnation = checkProjectStagnation(project, snapshots);
+        return (
+          <div
+            key={project.id}
+            className={`bg-white border rounded-2xl p-6 transition-colors shadow-sm ${
+              stagnation.isStagnant ? 'border-amber-200/90' : 'border-slate-100 hover:border-black'
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: project.color || '#000000' }}
+                />
+                <h4 className="font-semibold text-base text-[#0A0A0A] tracking-tight">{project.name}</h4>
+                <span className="text-xs text-slate-400">({project.category})</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-semibold mono-num">
+                  {project.progress_percentage}%
+                </span>
+                {stagnation.isStagnant && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200/80 text-amber-800 text-[10px] font-semibold"
+                    title={stagnation.reason}
+                  >
+                    <AlertTriangle className="w-3 h-3 text-amber-600" />
+                    <span>Stagnant &gt; 14d ({stagnation.stagnantDays}d)</span>
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => onSelectProject(project)}
+                className="text-xs text-black hover:underline font-semibold self-start sm:self-auto cursor-pointer"
+              >
+                Open Project Intelligence →
+              </button>
             </div>
-            <button
-              onClick={() => onSelectProject(project)}
-              className="text-xs text-black hover:underline font-semibold self-start sm:self-auto cursor-pointer"
-            >
-              Open Project Intelligence →
-            </button>
-          </div>
 
           {/* Milestones list */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -205,7 +248,8 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
             ))}
           </div>
         </div>
-      ))}
-    </div>
-  );
+      );
+    })}
+  </div>
+);
 };

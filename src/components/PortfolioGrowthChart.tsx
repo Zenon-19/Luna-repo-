@@ -37,31 +37,31 @@ export const PortfolioGrowthChart: React.FC<PortfolioGrowthChartProps> = ({
     ? Math.round(projects.reduce((sum, p) => sum + (p.health_score || 0), 0) / projects.length)
     : 0;
 
-  // Synthesize monthly aggregate trend leading up to current live metrics
+  // Synthesize monthly aggregate trend leading up to current live metrics in 2026
   const monthlyData = [
     {
       month: 'May 2026',
       totalValue: Math.round(currentTotalValuation * 0.46),
-      avgProgress: Math.max(25, currentAvgProgress - 28),
+      avgProgress: Math.min(45, Math.round(currentAvgProgress * 0.45)),
       avgHealth: Math.max(65, currentAvgHealth - 12),
-      activeCount: Math.max(6, Math.round(projects.length * 0.65)),
-    },
-    {
-      month: 'Jun 2026',
-      totalValue: Math.round(currentTotalValuation * 0.64),
-      avgProgress: Math.max(35, currentAvgProgress - 18),
-      avgHealth: Math.max(70, currentAvgHealth - 8),
-      activeCount: Math.max(7, Math.round(projects.length * 0.8)),
+      activeCount: Math.round(projects.length * 0.65),
     },
     {
       month: 'Jul 2026',
-      totalValue: Math.round(currentTotalValuation * 0.82),
-      avgProgress: Math.max(45, currentAvgProgress - 8),
-      avgHealth: Math.max(75, currentAvgHealth - 4),
-      activeCount: Math.max(8, projects.length - 1),
+      totalValue: Math.round(currentTotalValuation * 0.72),
+      avgProgress: Math.min(70, Math.round(currentAvgProgress * 0.7)),
+      avgHealth: Math.max(75, currentAvgHealth - 6),
+      activeCount: Math.round(projects.length * 0.85),
     },
     {
-      month: 'Aug 2026',
+      month: 'Sep 2026',
+      totalValue: Math.round(currentTotalValuation * 0.88),
+      avgProgress: Math.min(88, Math.round(currentAvgProgress * 0.88)),
+      avgHealth: Math.max(82, currentAvgHealth - 3),
+      activeCount: projects.length,
+    },
+    {
+      month: 'Nov 2026',
       totalValue: currentTotalValuation,
       avgProgress: currentAvgProgress,
       avgHealth: currentAvgHealth,

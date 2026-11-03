@@ -12,11 +12,13 @@ import {
   AlertTriangle,
   GitBranch
 } from 'lucide-react';
-import { Project } from '../types';
+import { Project, ProjectSnapshot } from '../types';
 import { formatCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
+import { checkProjectStagnation } from '../utils/alerts';
 
 interface ProjectCardProps {
   project: Project;
+  snapshots?: ProjectSnapshot[];
   currency: string;
   onClick: () => void;
   onQuickUpdate: (projectName: string) => void;
@@ -24,19 +26,21 @@ interface ProjectCardProps {
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
+  snapshots = [],
   currency,
   onClick,
   onQuickUpdate,
 }) => {
   const healthBadge = getHealthBadgeColor(project.health_score);
   const stageBadge = getStageColor(project.stage);
-  const isStagnant = project.days_since_update > 10 && project.status === 'active';
+  const stagnation = checkProjectStagnation(project, snapshots);
+  const isStagnant = stagnation.isStagnant;
 
   return (
     <div
       onClick={onClick}
-      className={`group relative bg-white border rounded-2xl p-6 hover:border-black hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between shadow-xs ${
-        isStagnant ? 'border-amber-300' : 'border-slate-100'
+      className={`group relative bg-white border rounded-2xl p-6 hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between shadow-xs ${
+        isStagnant ? 'border-amber-200/90 hover:border-amber-400 bg-amber-50/15' : 'border-slate-100 hover:border-black'
       }`}
     >
       {/* Top Bar: Identity & Health */}
@@ -51,7 +55,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-base text-[#0A0A0A] group-hover:text-black transition-colors tracking-tight">
                   {project.name}
                 </h3>
@@ -63,6 +67,15 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                 {project.status === 'on_hold' && (
                   <span className="text-[10px] uppercase font-bold text-amber-600">
                     · On Hold
+                  </span>
+                )}
+                {isStagnant && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 text-[10px] font-semibold tracking-tight"
+                    title={stagnation.reason}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Stagnant ({stagnation.stagnantDays}d)</span>
                   </span>
                 )}
               </div>
@@ -89,7 +102,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </p>
 
         {/* Progression Section */}
-        <div className="mb-5 bg-slate-50/70 p-4 rounded-xl border border-slate-100">
+        <div className={`mb-5 p-4 rounded-xl border ${
+          isStagnant ? 'bg-amber-50/30 border-amber-200/60' : 'bg-slate-50/70 border-slate-100'
+        }`}>
           <div className="flex items-center justify-between mb-2">
             <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
               Progress
@@ -98,9 +113,18 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               <span className="text-sm font-semibold text-[#0A0A0A] mono-num">
                 {project.progress_percentage}%
               </span>
-              {project.progress_delta_month > 0 && (
+              {isStagnant ? (
+                <span className="text-[10px] text-amber-700 font-bold flex items-center gap-1">
+                  <AlertTriangle className="w-2.5 h-2.5" />
+                  Stagnant ({stagnation.stagnantDays}d)
+                </span>
+              ) : project.progress_delta_month > 0 ? (
                 <span className="text-[11px] text-emerald-600 font-bold">
                   ↑ {project.progress_delta_month}%
+                </span>
+              ) : (
+                <span className="text-[11px] text-slate-400 font-medium">
+                  → 0%
                 </span>
               )}
             </div>
@@ -109,7 +133,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           {/* Progress Bar */}
           <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden">
             <div
-              className="bg-black h-1.5 rounded-full transition-all duration-500"
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                isStagnant ? 'bg-amber-600' : 'bg-black'
+              }`}
               style={{
                 width: `${project.progress_percentage}%`,
               }}
@@ -177,9 +203,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           )}
 
           {isStagnant && (
-            <span className="flex items-center gap-1 text-[10px] text-amber-700 font-medium">
-              <AlertTriangle className="w-2.5 h-2.5" />
-              {project.days_since_update}d inactive
+            <span
+              className="flex items-center gap-1 text-[10px] text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80"
+              title={stagnation.reason}
+            >
+              <AlertTriangle className="w-2.5 h-2.5 text-amber-600" />
+              <span>Stagnant &gt; 14d</span>
             </span>
           )}
         </div>

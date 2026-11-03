@@ -27,11 +27,12 @@ import {
   MCPStatus,
 } from './types';
 import { generatePortfolioInsights } from './services/api';
+import { checkProjectStagnation } from './utils/alerts';
 
-const DATA_VERSION = 'v2_167cr_ai_enterprise';
+const DATA_VERSION = 'v4_all_completed_2026';
 
 export default function App() {
-  // Local state with localStorage hydration & automatic migration to 1.67 Cr portfolio
+  // Local state with localStorage hydration & automatic migration to all completed projects (2026)
   const [projects, setProjects] = useState<Project[]>(() => {
     const version = localStorage.getItem('luna_data_version');
     if (version !== DATA_VERSION) {
@@ -47,16 +48,28 @@ export default function App() {
   });
 
   const [snapshots, setSnapshots] = useState<ProjectSnapshot[]>(() => {
+    const version = localStorage.getItem('luna_data_version');
+    if (version !== DATA_VERSION) {
+      return initialSnapshots;
+    }
     const saved = localStorage.getItem('luna_snapshots');
     return saved ? JSON.parse(saved) : initialSnapshots;
   });
 
   const [updateRecords, setUpdateRecords] = useState<ProjectUpdateRecord[]>(() => {
+    const version = localStorage.getItem('luna_data_version');
+    if (version !== DATA_VERSION) {
+      return initialUpdateRecords;
+    }
     const saved = localStorage.getItem('luna_update_records');
     return saved ? JSON.parse(saved) : initialUpdateRecords;
   });
 
   const [insights, setInsights] = useState<LunaInsight[]>(() => {
+    const version = localStorage.getItem('luna_data_version');
+    if (version !== DATA_VERSION) {
+      return initialInsights;
+    }
     const saved = localStorage.getItem('luna_insights');
     return saved ? JSON.parse(saved) : initialInsights;
   });
@@ -139,8 +152,14 @@ export default function App() {
         return false;
       }
       // Status filter
-      if (selectedStatus !== 'all' && p.status !== selectedStatus) {
-        return false;
+      if (selectedStatus !== 'all') {
+        if (selectedStatus === 'stagnant') {
+          if (!checkProjectStagnation(p, snapshots).isStagnant) {
+            return false;
+          }
+        } else if (p.status !== selectedStatus) {
+          return false;
+        }
       }
       // Search query
       if (searchQuery.trim()) {
@@ -154,7 +173,7 @@ export default function App() {
       }
       return true;
     });
-  }, [projects, selectedCategory, selectedStatus, searchQuery]);
+  }, [projects, snapshots, selectedCategory, selectedStatus, searchQuery]);
 
   // Handle Natural Language Update applied by Luna
   const handleApplyUpdate = (parseResult: AIParseResult, originalMessage: string) => {
@@ -360,12 +379,36 @@ export default function App() {
             : m
         );
         const completedCount = newMilestones.filter((m) => m.completed).length;
+        const newProgress = Math.round((completedCount / (newMilestones.length || 1)) * 100);
         return {
           ...prev,
           milestones: newMilestones,
-          progress_percentage: Math.round((completedCount / (newMilestones.length || 1)) * 100),
+          progress_percentage: newProgress,
         };
       });
+    }
+
+    // Append a new snapshot reflecting milestone progression
+    const project = projects.find((p) => p.id === projectId);
+    if (project) {
+      const newMilestones = project.milestones.map((m) =>
+        m.id === milestoneId
+          ? { ...m, completed, completed_at: completed ? new Date().toISOString().split('T')[0] : undefined }
+          : m
+      );
+      const completedCount = newMilestones.filter((m) => m.completed).length;
+      const autoProgress = Math.round((completedCount / (newMilestones.length || 1)) * 100);
+      const newSnap: ProjectSnapshot = {
+        id: `snap-${Date.now()}`,
+        project_id: projectId,
+        snapshot_date: new Date().toISOString().split('T')[0],
+        progress_percentage: autoProgress,
+        project_value: project.project_value,
+        health_score: project.health_score,
+        performance_score: project.performance_score,
+        note: `Milestone ${completed ? 'completed' : 'reopened'}`,
+      };
+      setSnapshots((prev) => [newSnap, ...prev]);
     }
   };
 
@@ -431,6 +474,7 @@ export default function App() {
         {/* KPI Cards Section */}
         <KPISection
           projects={projects}
+          snapshots={snapshots}
           currency={currency}
           onFilterStatus={(st) => setSelectedStatus((prev) => (prev === st ? 'all' : st))}
           selectedStatus={selectedStatus}
@@ -456,10 +500,14 @@ export default function App() {
           <div className="flex justify-between items-end mb-6">
             <div>
               <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-                {selectedCategory === 'All' ? 'Active Projects' : `${selectedCategory} Projects`}
+                {selectedStatus === 'completed' || projects.every((p) => p.status === 'completed')
+                  ? 'Completed Projects (Ending 2026)'
+                  : selectedCategory === 'All'
+                  ? 'Active Projects'
+                  : `${selectedCategory} Projects`}
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} tracked in real-time
+                {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} tracked in real-time · All 100% completed ending this year
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -467,7 +515,7 @@ export default function App() {
                 onClick={() => setSelectedStatus((prev) => (prev === 'archived' ? 'all' : 'archived'))}
                 className="text-xs font-semibold text-black hover:underline cursor-pointer"
               >
-                {selectedStatus === 'archived' ? 'View Active Projects' : 'View Archive'}
+                {selectedStatus === 'archived' ? 'View All Projects' : 'View Archive'}
               </button>
             </div>
           </div>
@@ -488,6 +536,7 @@ export default function App() {
         ) : (
           <ProjectGrid
             projects={filteredProjects}
+            snapshots={snapshots}
             currency={currency}
             viewMode={viewMode}
             onSelectProject={(p) => setSelectedProject(p)}

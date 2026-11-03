@@ -18,10 +18,12 @@ import {
   Layers,
   Flame,
   GitBranch,
-  User
+  User,
+  AlertTriangle
 } from 'lucide-react';
 import { Project, ProjectSnapshot, ProjectUpdateRecord, Milestone } from '../types';
 import { formatCurrency, formatExactCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
+import { checkProjectStagnation } from '../utils/alerts';
 
 interface ProjectDetailModalProps {
   project: Project;
@@ -58,6 +60,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
   const healthBadge = getHealthBadgeColor(project.health_score);
   const stageBadge = getStageColor(project.stage);
+  const stagnation = checkProjectStagnation(project, snapshots);
 
   const handleCreateMilestone = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +92,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               {project.name.slice(0, 2).toUpperCase()}
             </div>
             <div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <h2 className="text-xl font-bold text-[#0A0A0A] tracking-tight">{project.name}</h2>
                 <span className="text-xs text-slate-400 font-medium">
                   · {project.stage} Stage
@@ -97,6 +100,15 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 <span className="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full font-bold">
                   {project.health_score}/100 {healthBadge.label}
                 </span>
+                {stagnation.isStagnant && (
+                  <span
+                    className="text-xs bg-amber-50 text-amber-800 border border-amber-200/80 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5"
+                    title={stagnation.reason}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Stagnant &gt; 14d ({stagnation.stagnantDays}d)</span>
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-400 mt-1">
                 {project.category} · Owned by {project.owner} · Started {project.start_date}
@@ -183,6 +195,38 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Proactive Stagnation Alert Banner */}
+              {stagnation.isStagnant && (
+                <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-5 shadow-xs flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-800 shrink-0 mt-0.5">
+                    <AlertTriangle className="w-5 h-5 text-amber-700" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                        <span>Proactive Alert · Progress Stagnant for {stagnation.stagnantDays} Days</span>
+                      </h4>
+                      <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md border border-amber-200/60">
+                        Threshold Exceeded (&gt; 14d)
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-950/90 leading-relaxed mb-3">
+                      Historical snapshot analysis reveals progress has remained unchanged at <strong className="font-semibold text-black">{project.progress_percentage}%</strong> since {stagnation.sinceSnapshotDate}. Zero progress advancement has been recorded across snapshots for {stagnation.stagnantDays} days.
+                    </p>
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onQuickUpdate(project.name);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Post Progress Update with Luna</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Description Card */}
               <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-6 shadow-xs">
                 <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
@@ -264,25 +308,38 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             <div className="space-y-6">
               {/* Progress Breakdown */}
               <div className="bg-slate-50/60 border border-slate-100 rounded-2xl p-5 shadow-xs">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                   <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Progress Progression Curve
                   </span>
-                  <span className="text-lg font-bold text-[#0A0A0A] mono-num">
-                    {project.progress_percentage}% Completed
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {stagnation.isStagnant && (
+                      <span className="text-xs bg-amber-50 text-amber-800 border border-amber-200/80 px-2.5 py-0.5 rounded-lg font-semibold flex items-center gap-1.5">
+                        <AlertTriangle className="w-3 h-3 text-amber-600" />
+                        <span>Stagnant for {stagnation.stagnantDays} days</span>
+                      </span>
+                    )}
+                    <span className="text-lg font-bold text-[#0A0A0A] mono-num">
+                      {project.progress_percentage}% Completed
+                    </span>
+                  </div>
                 </div>
                 <div className="w-full bg-slate-200 rounded-full h-2.5 mb-4 overflow-hidden">
                   <div
-                    className="h-2.5 rounded-full bg-black"
+                    className={`h-2.5 rounded-full ${stagnation.isStagnant ? 'bg-amber-600' : 'bg-black'}`}
                     style={{ width: `${project.progress_percentage}%` }}
                   />
                 </div>
 
                 {/* Snapshots Table */}
-                <h5 className="text-xs font-semibold text-slate-700 mb-2 mt-4">
-                  Historical Progression Snapshots
-                </h5>
+                <div className="flex items-center justify-between mt-5 mb-2">
+                  <h5 className="text-xs font-semibold text-slate-700">
+                    Historical Progression Snapshots
+                  </h5>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {projectSnapshots.length} snapshot records
+                  </span>
+                </div>
                 <div className="border border-slate-100 rounded-xl overflow-hidden bg-white shadow-xs">
                   <table className="w-full text-left text-xs">
                     <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-semibold border-b border-slate-100">
@@ -295,23 +352,47 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-slate-700">
-                      {projectSnapshots.map((snap) => (
-                        <tr key={snap.id} className="hover:bg-slate-50/60">
-                          <td className="py-2 px-3 mono-num text-slate-500">{snap.snapshot_date}</td>
-                          <td className="py-2 px-3 font-semibold text-black mono-num">
-                            {snap.progress_percentage}%
-                          </td>
-                          <td className="py-2 px-3 mono-num">
-                            {formatCurrency(snap.project_value, currency)}
-                          </td>
-                          <td className="py-2 px-3">
-                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 mono-num text-[11px] font-semibold">
-                              {snap.health_score}
-                            </span>
-                          </td>
-                          <td className="py-2 px-3 text-slate-500">{snap.note || 'Regular snapshot'}</td>
-                        </tr>
-                      ))}
+                      {projectSnapshots.map((snap) => {
+                        const isStagnantSnapshot =
+                          stagnation.isStagnant &&
+                          snap.progress_percentage === project.progress_percentage &&
+                          new Date(snap.snapshot_date).getTime() >=
+                            new Date(stagnation.sinceSnapshotDate || '').getTime();
+
+                        return (
+                          <tr
+                            key={snap.id}
+                            className={`hover:bg-slate-50/60 ${
+                              isStagnantSnapshot ? 'bg-amber-50/20' : ''
+                            }`}
+                          >
+                            <td className="py-2.5 px-3 mono-num text-slate-600">
+                              {snap.snapshot_date}
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-black mono-num">
+                              <span className="inline-flex items-center gap-1.5">
+                                <span>{snap.progress_percentage}%</span>
+                                {isStagnantSnapshot && (
+                                  <span className="text-[9px] uppercase tracking-wider text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 font-bold">
+                                    Frozen
+                                  </span>
+                                )}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 mono-num">
+                              {formatCurrency(snap.project_value, currency)}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 mono-num text-[11px] font-semibold">
+                                {snap.health_score}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-500">
+                              {snap.note || 'Regular snapshot'}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

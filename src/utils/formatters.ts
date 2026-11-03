@@ -86,6 +86,9 @@ export function getStageColor(stage: string): string {
   // Clean monochromatic stage styling
   switch (stage) {
     case 'Launch':
+    case 'Production':
+    case 'Delivered':
+    case 'Completed':
       return 'bg-zinc-900 text-white border-zinc-900';
     case 'Scaling':
       return 'bg-zinc-100 text-zinc-900 border-zinc-200/60 font-semibold';
@@ -104,6 +107,8 @@ export function calculatePortfolioMetrics(projects: any[]) {
   const activeProjects = projects.filter(p => p.status === 'active');
   const avgProgress = activeProjects.length
     ? Math.round(activeProjects.reduce((acc, p) => acc + (p.progress_percentage || 0), 0) / activeProjects.length)
+    : projects.length
+    ? Math.round(projects.reduce((acc, p) => acc + (p.progress_percentage || 0), 0) / projects.length)
     : 0;
 
   const totalValue = projects.reduce((acc, p) => acc + (p.project_value || 0), 0);
