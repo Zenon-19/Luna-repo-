@@ -27,6 +27,15 @@ export type HealthStatus = 'Excellent' | 'Healthy' | 'Attention Required' | 'At 
 
 export type PerformanceTrend = 'improving' | 'stable' | 'declining' | 'stagnant';
 
+export type ProjectSortOption =
+  | 'default'
+  | 'health_desc'
+  | 'health_asc'
+  | 'value_desc'
+  | 'value_asc'
+  | 'date_asc'
+  | 'date_desc';
+
 export interface Milestone {
   id: string;
   title: string;

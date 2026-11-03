@@ -10,7 +10,8 @@ import {
   MessageSquarePlus,
   Flame,
   AlertTriangle,
-  GitBranch
+  GitBranch,
+  Calendar
 } from 'lucide-react';
 import { Project, ProjectSnapshot } from '../types';
 import { formatCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
@@ -195,8 +196,23 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             {project.milestones.filter((m) => m.completed).length}/{project.milestones.length}
           </span>
 
+          {project.target_completion_date && (
+            <span
+              className="flex items-center gap-1 text-[11px] text-slate-500 font-medium"
+              title={`Target Completion: ${project.target_completion_date}`}
+            >
+              <Calendar className="w-3 h-3 text-slate-400" />
+              <span>
+                {new Date(project.target_completion_date + 'T00:00:00').toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+            </span>
+          )}
+
           {project.github_commits_count && (
-            <span className="flex items-center gap-1 text-xs text-slate-400">
+            <span className="hidden sm:flex items-center gap-1 text-xs text-slate-400">
               <GitBranch className="w-3 h-3" />
               {project.github_commits_count}
             </span>

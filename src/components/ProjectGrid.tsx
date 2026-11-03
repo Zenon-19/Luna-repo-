@@ -1,6 +1,18 @@
 import React from 'react';
-import { LayoutGrid, ListFilter, Calendar, Plus, Sparkles, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
-import { Project, ProjectSnapshot } from '../types';
+import { 
+  LayoutGrid, 
+  ListFilter, 
+  Calendar, 
+  Plus, 
+  Sparkles, 
+  CheckCircle2, 
+  Clock, 
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown
+} from 'lucide-react';
+import { Project, ProjectSnapshot, ProjectSortOption } from '../types';
 import { ProjectCard } from './ProjectCard';
 import { formatCurrency, getHealthBadgeColor, getStageColor } from '../utils/formatters';
 import { checkProjectStagnation } from '../utils/alerts';
@@ -10,6 +22,8 @@ interface ProjectGridProps {
   snapshots?: ProjectSnapshot[];
   currency: string;
   viewMode: 'grid' | 'table' | 'timeline' | 'audit';
+  sortBy?: ProjectSortOption;
+  onSortChange?: (sort: ProjectSortOption) => void;
   onSelectProject: (project: Project) => void;
   onQuickUpdate: (projectName: string) => void;
   onOpenNewProject: () => void;
@@ -20,6 +34,8 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
   snapshots = [],
   currency,
   viewMode,
+  sortBy,
+  onSortChange,
   onSelectProject,
   onQuickUpdate,
   onOpenNewProject,
@@ -75,9 +91,37 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                 <th className="py-4 px-6">Category</th>
                 <th className="py-4 px-6">Stage</th>
                 <th className="py-4 px-6">Progress</th>
-                <th className="py-4 px-6">Project Value</th>
+                <th 
+                  className={`py-4 px-6 ${onSortChange ? 'cursor-pointer hover:text-black transition-colors select-none' : ''}`}
+                  onClick={() => {
+                    if (onSortChange) {
+                      onSortChange(sortBy === 'value_desc' ? 'value_asc' : 'value_desc');
+                    }
+                  }}
+                  title="Click to sort by Project Value"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Project Value</span>
+                    {sortBy === 'value_desc' && <ArrowDown className="w-3 h-3 text-black" />}
+                    {sortBy === 'value_asc' && <ArrowUp className="w-3 h-3 text-black" />}
+                  </div>
+                </th>
                 <th className="py-4 px-6">Performance</th>
-                <th className="py-4 px-6">Health</th>
+                <th 
+                  className={`py-4 px-6 ${onSortChange ? 'cursor-pointer hover:text-black transition-colors select-none' : ''}`}
+                  onClick={() => {
+                    if (onSortChange) {
+                      onSortChange(sortBy === 'health_desc' ? 'health_asc' : 'health_desc');
+                    }
+                  }}
+                  title="Click to sort by Health Score"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Health</span>
+                    {sortBy === 'health_desc' && <ArrowDown className="w-3 h-3 text-black" />}
+                    {sortBy === 'health_asc' && <ArrowUp className="w-3 h-3 text-black" />}
+                  </div>
+                </th>
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
             </thead>

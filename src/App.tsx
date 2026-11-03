@@ -10,6 +10,7 @@ import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { NewProjectModal } from './components/NewProjectModal';
 import { ExportReportModal } from './components/ExportReportModal';
 import { MCPStatusModal } from './components/MCPStatusModal';
+import { ProjectSortDropdown } from './components/ProjectSortDropdown';
 
 import {
   initialProjects,
@@ -25,6 +26,7 @@ import {
   LunaInsight,
   AIParseResult,
   MCPStatus,
+  ProjectSortOption,
 } from './types';
 import { generatePortfolioInsights } from './services/api';
 import { checkProjectStagnation } from './utils/alerts';
@@ -82,6 +84,7 @@ export default function App() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [currency, setCurrency] = useState('₹');
   const [viewMode, setViewMode] = useState<'grid' | 'table' | 'timeline' | 'audit'>('grid');
+  const [sortBy, setSortBy] = useState<ProjectSortOption>('default');
 
   // Modals & Active selections
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -144,9 +147,9 @@ export default function App() {
     return Array.from(set);
   }, [projects]);
 
-  // Filter projects by search, category, status
+  // Filter and sort projects by search, category, status, and sortBy option
   const filteredProjects = useMemo(() => {
-    return projects.filter((p) => {
+    const list = projects.filter((p) => {
       // Category filter
       if (selectedCategory !== 'All' && p.category !== selectedCategory) {
         return false;
@@ -173,7 +176,36 @@ export default function App() {
       }
       return true;
     });
-  }, [projects, snapshots, selectedCategory, selectedStatus, searchQuery]);
+
+    if (sortBy === 'health_desc') {
+      return [...list].sort((a, b) => (b.health_score || 0) - (a.health_score || 0));
+    }
+    if (sortBy === 'health_asc') {
+      return [...list].sort((a, b) => (a.health_score || 0) - (b.health_score || 0));
+    }
+    if (sortBy === 'value_desc') {
+      return [...list].sort((a, b) => (b.project_value || 0) - (a.project_value || 0));
+    }
+    if (sortBy === 'value_asc') {
+      return [...list].sort((a, b) => (a.project_value || 0) - (b.project_value || 0));
+    }
+    if (sortBy === 'date_asc') {
+      return [...list].sort(
+        (a, b) =>
+          new Date(a.target_completion_date || '9999-12-31').getTime() -
+          new Date(b.target_completion_date || '9999-12-31').getTime()
+      );
+    }
+    if (sortBy === 'date_desc') {
+      return [...list].sort(
+        (a, b) =>
+          new Date(b.target_completion_date || '1970-01-01').getTime() -
+          new Date(a.target_completion_date || '1970-01-01').getTime()
+      );
+    }
+
+    return list;
+  }, [projects, snapshots, selectedCategory, selectedStatus, searchQuery, sortBy]);
 
   // Handle Natural Language Update applied by Luna
   const handleApplyUpdate = (parseResult: AIParseResult, originalMessage: string) => {
@@ -497,7 +529,7 @@ export default function App() {
 
         {/* Section Heading for Projects in Clean Minimalism */}
         {viewMode !== 'audit' && (
-          <div className="flex justify-between items-end mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
               <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
                 {selectedStatus === 'completed' || projects.every((p) => p.status === 'completed')
@@ -510,7 +542,10 @@ export default function App() {
                 {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} tracked in real-time · All 100% completed ending this year
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Sorting Dropdown Component */}
+              <ProjectSortDropdown sortBy={sortBy} onSortChange={setSortBy} />
+
               <button
                 onClick={() => setSelectedStatus((prev) => (prev === 'archived' ? 'all' : 'archived'))}
                 className="text-xs font-semibold text-black hover:underline cursor-pointer"
@@ -539,6 +574,8 @@ export default function App() {
             snapshots={snapshots}
             currency={currency}
             viewMode={viewMode}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
             onSelectProject={(p) => setSelectedProject(p)}
             onQuickUpdate={handleQuickUpdate}
             onOpenNewProject={() => setIsNewProjectModalOpen(true)}
