@@ -34,6 +34,9 @@ export const initialProjects: Project[] = [
     tags: ['Enterprise AI', 'Multi-Agent', 'ERP Sync', 'RAG', 'SOC-2'],
     repo_name: 'aetherius-cortex-core',
     github_commits_count: 142,
+    how_made: 'Constructed as an autonomous multi-agent orchestrator using Python LangGraph supervisor patterns and FastAPI. Connects to SAP S/4HANA via certified PyRFC RFC connectors, syncs Salesforce via Bulk API v2, and federates vector search queries over Snowflake and Milvus. Employs asynchronous Redis Celery worker queues with strict zero-trust enterprise RBAC.',
+    architecture: 'Next.js Frontend -> FastAPI Enterprise Gateway -> LangGraph Multi-Agent Supervisor -> PyRFC SAP S/4HANA Connector -> Snowflake Vector Store -> Redis Pub/Sub Event Loop',
+    tech_stack: ['Python', 'LangGraph', 'FastAPI', 'SAP S/4HANA PyRFC', 'Salesforce API', 'Snowflake', 'Milvus', 'Redis', 'Docker'],
     milestones: [
       { id: 'm-ae-1', title: 'SAP S/4 HANA bidirectional connector', target_date: '2026-04-10', completed: true, completed_at: '2026-04-05' },
       { id: 'm-ae-2', title: 'Snowflake federated vector store with RAG pipeline', target_date: '2026-06-25', completed: true, completed_at: '2026-06-20' },
@@ -49,7 +52,361 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 2. NovaPay (Fintech)
+  // 2. OmniSync Enterprise CRM & Revenue Engine (CRM-Based)
+  {
+    id: 'proj-omnisync-crm',
+    name: 'OmniSync Enterprise CRM',
+    slug: 'omnisync-enterprise-crm',
+    description: 'Omnichannel enterprise CRM and deal velocity engine unifying Salesforce, HubSpot, and WhatsApp Business API with autonomous lead deduplication, conversation intelligence, and pipeline risk mitigation.',
+    category: 'SaaS',
+    status: 'completed',
+    stage: 'Production',
+    progress_percentage: 100,
+    project_value: 2800000, // ₹28L
+    currency: '₹',
+    realized_value: 2800000,
+    potential_value: 5500000,
+    cost_to_date: 380000,
+    health_score: 97,
+    health_status: 'Excellent',
+    performance_score: 95,
+    performance_trend: 'improving',
+    performance_delta_month: 20,
+    performance_delta_year: 100,
+    progress_delta_month: 25,
+    progress_delta_year: 100,
+    value_delta_month: 600000,
+    value_delta_year: 2800000,
+    target_completion_date: '2026-10-25',
+    start_date: '2026-02-01',
+    owner: 'Lakshya Lohani',
+    icon: 'Layers',
+    color: '#0284C7',
+    tags: ['CRM', 'Enterprise CRM', 'Salesforce', 'HubSpot', 'Revenue Ops', 'Kafka'],
+    repo_name: 'omnisync-crm-engine',
+    github_commits_count: 156,
+    how_made: 'Engineered with an asynchronous event-driven architecture using Next.js 15, FastAPI, and Apache Kafka. Ingests high-frequency webhooks from Salesforce Streaming API and HubSpot REST endpoints, normalizes records into a unified CRM schema, and executes real-time deduplication via pgvector embeddings on PostgreSQL. Pipeline forecasting is powered by fine-tuned regression models running on isolated worker pools.',
+    architecture: 'Event-driven microservices: Next.js 15 UI -> FastAPI Gateway -> Apache Kafka Event Bus -> PostgreSQL (pgvector) + Redis -> Celery Distributed Task Queue -> Salesforce/HubSpot Connectors',
+    tech_stack: ['Next.js 15', 'FastAPI', 'Apache Kafka', 'PostgreSQL', 'pgvector', 'Redis', 'Celery', 'Salesforce API', 'HubSpot API', 'Docker'],
+    milestones: [
+      { id: 'm-osc-1', title: 'Bi-directional Salesforce & HubSpot real-time webhook event sync', target_date: '2026-04-15', completed: true, completed_at: '2026-04-12' },
+      { id: 'm-osc-2', title: 'Omnichannel conversational VoIP and transcript NLP extractor', target_date: '2026-06-30', completed: true, completed_at: '2026-06-25' },
+      { id: 'm-osc-3', title: 'Predictive deal stage velocity and revenue forecasting engine', target_date: '2026-08-30', completed: true, completed_at: '2026-08-28' },
+      { id: 'm-osc-4', title: 'SOC-2 Type II enterprise security audit & 500-seat multi-tenant rollout', target_date: '2026-10-25', completed: true, completed_at: '2026-10-22' },
+    ],
+    business_signals: [
+      'Synchronized 450,000 active customer records with zero sync collisions',
+      'Reduced enterprise deal closing turnaround time from 28 days to 14 days',
+      'Passed external SOC-2 Type II compliance audit with 100% adherence',
+    ],
+    last_updated: '2026-10-25T14:30:00Z',
+    days_since_update: 0,
+  },
+
+  // 3. Vanguard ERP & Distributed Supply Mesh (ERP-Level)
+  {
+    id: 'proj-vanguard-erp',
+    name: 'Vanguard ERP & Supply Mesh',
+    slug: 'vanguard-erp-supply-mesh',
+    description: 'Enterprise Resource Planning orchestration platform unifying SAP S/4HANA, NetSuite, and multi-plant IoT inventory telemetry. Manages automated PO reconciliation, multi-facility warehouse distribution, and GAAP-compliant double-entry general ledgers.',
+    category: 'Infrastructure',
+    status: 'completed',
+    stage: 'Production',
+    progress_percentage: 100,
+    project_value: 3800000, // ₹38L
+    currency: '₹',
+    realized_value: 3800000,
+    potential_value: 8200000,
+    cost_to_date: 520000,
+    health_score: 99,
+    health_status: 'Excellent',
+    performance_score: 98,
+    performance_trend: 'improving',
+    performance_delta_month: 26,
+    performance_delta_year: 100,
+    progress_delta_month: 20,
+    progress_delta_year: 100,
+    value_delta_month: 900000,
+    value_delta_year: 3800000,
+    target_completion_date: '2026-11-28',
+    start_date: '2026-01-10',
+    owner: 'Lakshya Lohani',
+    icon: 'Database',
+    color: '#059669',
+    tags: ['ERP', 'SAP S/4HANA', 'Supply Chain', 'Rust', 'Kafka', 'IoT', 'GAAP'],
+    repo_name: 'vanguard-erp-core',
+    github_commits_count: 184,
+    how_made: 'Constructed with Rust for the financial core ledger engine to guarantee deterministic decimal precision and zero floating-point drift, paired with TimescaleDB for time-series IoT sensor telemetry. Connects to SAP NetWeaver via certified RFC bindings and exposes gRPC endpoints to warehouse edge gateways. Event streaming is coordinated across Apache Kafka with strict schema validation using Protocol Buffers.',
+    architecture: 'Rust Core Ledger Engine (ACID & Decimal Precision) -> TimescaleDB Time-Series Telemetry -> gRPC Edge Microservices -> SAP NetWeaver RFC Gateway -> Kafka Message Bus',
+    tech_stack: ['Rust', 'TimescaleDB', 'gRPC', 'SAP RFC', 'NetSuite SuiteTalk', 'Apache Kafka', 'Protocol Buffers', 'PostgreSQL', 'Kubernetes'],
+    milestones: [
+      { id: 'm-vg-1', title: 'SAP S/4HANA & NetSuite bidirectional RFC connector module', target_date: '2026-04-20', completed: true, completed_at: '2026-04-15' },
+      { id: 'm-vg-2', title: 'Distributed IoT warehouse telemetry and automated stock reconciliation', target_date: '2026-07-15', completed: true, completed_at: '2026-07-10' },
+      { id: 'm-vg-3', title: 'Automated 3-way invoice matching & double-entry GAAP general ledger', target_date: '2026-09-30', completed: true, completed_at: '2026-09-24' },
+      { id: 'm-vg-4', title: 'Global enterprise rollout across 18 manufacturing facilities', target_date: '2026-11-28', completed: true, completed_at: '2026-11-25' },
+    ],
+    business_signals: [
+      'Integrated 18 industrial plants handling ₹40+ Cr monthly raw material inventory',
+      'Automated three-way invoice matching with 99.8% hands-free reconciliation accuracy',
+      'Real-time stockout risk alert prevented 2 major manufacturing line stoppages',
+    ],
+    last_updated: '2026-11-28T16:00:00Z',
+    days_since_update: 0,
+  },
+
+  // 4. Aegis Autonomous SRE Agent Swarm (AI Agent)
+  {
+    id: 'proj-aegis-sre',
+    name: 'Aegis Autonomous SRE Agent',
+    slug: 'aegis-autonomous-sre-agent',
+    description: 'Autonomous Site Reliability Engineering multi-agent swarm that monitors production Kubernetes clusters, analyzes OpenTelemetry distributed traces and Prometheus metrics, and executes self-healing runbooks for critical incidents.',
+    category: 'AI & ML',
+    status: 'completed',
+    stage: 'Production',
+    progress_percentage: 100,
+    project_value: 2600000, // ₹26L
+    currency: '₹',
+    realized_value: 2600000,
+    potential_value: 6000000,
+    cost_to_date: 340000,
+    health_score: 98,
+    health_status: 'Excellent',
+    performance_score: 97,
+    performance_trend: 'improving',
+    performance_delta_month: 24,
+    performance_delta_year: 100,
+    progress_delta_month: 30,
+    progress_delta_year: 100,
+    value_delta_month: 700000,
+    value_delta_year: 2600000,
+    target_completion_date: '2026-11-18',
+    start_date: '2026-03-01',
+    owner: 'Lakshya Lohani',
+    icon: 'ShieldAlert',
+    color: '#DC2626',
+    tags: ['AI Agents', 'Autonomous SRE', 'LangGraph', 'Kubernetes', 'Gemini', 'DevOps'],
+    repo_name: 'aegis-sre-agent-swarm',
+    github_commits_count: 148,
+    how_made: 'Engineered in Python using LangGraph supervisor multi-agent patterns with Gemini 2.5 Pro as the core reasoning planner. Employs Linux eBPF probes for kernel-level networking telemetry, Milvus vector database storing historical postmortems, and Kubernetes Client-Python for dynamic pod scaling, circuit breaking, and canary rollbacks. Enforces human-in-the-loop verification via Slack interactive modal webhooks for destructive actions.',
+    architecture: 'eBPF Telemetry Ingest -> LangGraph Multi-Agent Supervisor -> Gemini 2.5 Pro Reasoner -> Milvus Vector DB (Postmortems) -> Kubernetes Operator API -> Slack Human-in-the-loop Gate',
+    tech_stack: ['Python', 'LangGraph', 'Gemini 2.5 Pro', 'Kubernetes Operator', 'eBPF', 'Milvus', 'OpenTelemetry', 'Prometheus', 'Slack API'],
+    milestones: [
+      { id: 'm-as-1', title: 'OpenTelemetry & Prometheus kernel eBPF anomaly detector agent', target_date: '2026-05-20', completed: true, completed_at: '2026-05-15' },
+      { id: 'm-as-2', title: 'Root-cause hypothesis generation & runbook vector search engine', target_date: '2026-07-30', completed: true, completed_at: '2026-07-25' },
+      { id: 'm-as-3', title: 'Autonomous remediation executor with human-in-the-loop Slack approval', target_date: '2026-09-30', completed: true, completed_at: '2026-09-26' },
+      { id: 'm-as-4', title: 'Production deployment across 600 microservice pods with SOC-2 RBAC', target_date: '2026-11-18', completed: true, completed_at: '2026-11-15' },
+    ],
+    business_signals: [
+      'Autonomous agents resolved 87% of P2/P3 production alerts without human waking',
+      'Reduced Mean Time to Resolution (MTTR) by 76% across 600 microservice pods',
+      'Passed cloud infrastructure security review with zero elevated privilege vulnerabilities',
+    ],
+    last_updated: '2026-11-18T15:00:00Z',
+    days_since_update: 0,
+  },
+
+  // 5. Titan Global Ledger ERP Suite (ERP-Level)
+  {
+    id: 'proj-titan-ledger',
+    name: 'Titan Global Ledger ERP Suite',
+    slug: 'titan-global-ledger-erp',
+    description: 'Multi-entity international financial and asset lifecycle ERP suite for multinational conglomerates. Automates intercompany settlement, multi-currency treasury reconciliation across 42 currencies, and real-time customs tax/tariff accounting.',
+    category: 'Fintech',
+    status: 'completed',
+    stage: 'Delivered',
+    progress_percentage: 100,
+    project_value: 3400000, // ₹34L
+    currency: '₹',
+    realized_value: 3400000,
+    potential_value: 7500000,
+    cost_to_date: 460000,
+    health_score: 97,
+    health_status: 'Excellent',
+    performance_score: 96,
+    performance_trend: 'improving',
+    performance_delta_month: 22,
+    performance_delta_year: 100,
+    progress_delta_month: 25,
+    progress_delta_year: 100,
+    value_delta_month: 750000,
+    value_delta_year: 3400000,
+    target_completion_date: '2026-11-15',
+    start_date: '2026-02-15',
+    owner: 'Priya Sharma',
+    icon: 'Coins',
+    color: '#D97706',
+    tags: ['ERP', 'Fintech ERP', 'Multi-currency', 'Treasury', 'Java', 'Accounting'],
+    repo_name: 'titan-erp-ledger',
+    github_commits_count: 168,
+    how_made: 'Developed on Java 21 with Spring Boot 3 utilizing Virtual Threads for concurrent transaction processing, PostgreSQL partitioned by fiscal year and tenant entity, and Redis for distributed locking during multi-currency settlement. Currency arbitrage and hedging telemetry are monitored via Apache Flink streaming jobs connected to global SWIFT banking APIs.',
+    architecture: 'Java 21 Spring Boot 3 -> Partitioned PostgreSQL -> Apache Flink Stream Processor -> SWIFT MT/MX Financial Gateway -> Redis Cluster Distributed Locks',
+    tech_stack: ['Java 21', 'Spring Boot 3', 'PostgreSQL Partitioning', 'Apache Flink', 'SWIFT API', 'Redis Cluster', 'Flyway', 'GCP Kubernetes'],
+    milestones: [
+      { id: 'm-tl-1', title: 'Multi-currency intercompany settlement & transfer pricing ledger', target_date: '2026-05-10', completed: true, completed_at: '2026-05-05' },
+      { id: 'm-tl-2', title: 'Cross-border VAT, GST, and customs tariff automated compliance rules', target_date: '2026-07-25', completed: true, completed_at: '2026-07-20' },
+      { id: 'm-tl-3', title: 'Automated month-end financial book closing engine with audit trail', target_date: '2026-09-20', completed: true, completed_at: '2026-09-16' },
+      { id: 'm-tl-4', title: 'Production deployment across 12 global corporate holding subsidiaries', target_date: '2026-11-15', completed: true, completed_at: '2026-11-12' },
+    ],
+    business_signals: [
+      'Compressed month-end financial close duration from 9 days down to 6 hours',
+      'Zero reconciliation discrepancies recorded across 42 currency conversion pairs',
+      'Audited by Big 4 accounting firm with 100% compliance certification',
+    ],
+    last_updated: '2026-11-15T12:00:00Z',
+    days_since_update: 0,
+  },
+
+  // 6. Sovereign Autonomous Procurement Agent (AI Agent)
+  {
+    id: 'proj-sovereign-procure',
+    name: 'Sovereign Procurement Agent',
+    slug: 'sovereign-procurement-agent',
+    description: 'Autonomous procurement negotiation agent swarm that monitors commodity price indexes, parses vendor master contracts, generates dynamic RFPs, and conducts multi-turn price negotiations within strict governance limits.',
+    category: 'AI & ML',
+    status: 'completed',
+    stage: 'Delivered',
+    progress_percentage: 100,
+    project_value: 2400000, // ₹24L
+    currency: '₹',
+    realized_value: 2400000,
+    potential_value: 5200000,
+    cost_to_date: 310000,
+    health_score: 97,
+    health_status: 'Excellent',
+    performance_score: 95,
+    performance_trend: 'improving',
+    performance_delta_month: 20,
+    performance_delta_year: 100,
+    progress_delta_month: 30,
+    progress_delta_year: 100,
+    value_delta_month: 600000,
+    value_delta_year: 2400000,
+    target_completion_date: '2026-11-22',
+    start_date: '2026-02-25',
+    owner: 'Lakshya Lohani',
+    icon: 'Bot',
+    color: '#7C3AED',
+    tags: ['AI Agents', 'Procurement', 'AutoGen', 'Negotiation AI', 'SAP Ariba', 'DocuSign'],
+    repo_name: 'sovereign-procure-swarm',
+    github_commits_count: 132,
+    how_made: 'Constructed with Python using AutoGen and LangChain tool-calling agents. Features dedicated Buyer, Auditor, and Legal Validator agent roles interacting in a constrained state machine. Leverages Qdrant vector database for vendor contract historical clauses, DocuSign Envelopes API for automated signature staging, and SAP Ariba webhooks for purchase requisition ingestion.',
+    architecture: 'SAP Ariba/Coupa Ingestion -> AutoGen Multi-Agent State Machine (Buyer + Auditor + Legal Agents) -> Qdrant Clause Vector Store -> DocuSign Signature API',
+    tech_stack: ['Python', 'AutoGen', 'LangChain', 'Qdrant Vector DB', 'SAP Ariba API', 'DocuSign API', 'FastAPI', 'PostgreSQL'],
+    milestones: [
+      { id: 'm-sp-1', title: 'Commodity pricing index crawler and vendor catalog parser', target_date: '2026-05-15', completed: true, completed_at: '2026-05-10' },
+      { id: 'm-sp-2', title: 'Multi-agent dynamic RFP bidding and auction simulation room', target_date: '2026-07-28', completed: true, completed_at: '2026-07-22' },
+      { id: 'm-sp-3', title: 'Automated SLA legal risk scorer & dynamic counter-term generator', target_date: '2026-09-25', completed: true, completed_at: '2026-09-20' },
+      { id: 'm-sp-4', title: 'Integration into enterprise SAP Ariba & Coupa procurement desk', target_date: '2026-11-22', completed: true, completed_at: '2026-11-19' },
+    ],
+    business_signals: [
+      'Negotiated ₹1.8 Cr in recurring vendor software licensing savings',
+      'Reduced contract turnaround from initial RFP draft to execution from 3 weeks to 48 hours',
+    ],
+    last_updated: '2026-11-22T14:00:00Z',
+    days_since_update: 0,
+  },
+
+  // 7. NexusRelate Graph CRM (CRM-Based)
+  {
+    id: 'proj-nexus-relate',
+    name: 'NexusRelate Graph CRM',
+    slug: 'nexus-relate-graph-crm',
+    description: 'Relationship-capital intelligence CRM for corporate investment banking and private equity. Maps entity relationship graphs, tracks executive mobility across regulatory filings, and calculates algorithmic warm-introduction paths.',
+    category: 'SaaS',
+    status: 'completed',
+    stage: 'Delivered',
+    progress_percentage: 100,
+    project_value: 2200000, // ₹22L
+    currency: '₹',
+    realized_value: 2200000,
+    potential_value: 4800000,
+    cost_to_date: 290000,
+    health_score: 96,
+    health_status: 'Excellent',
+    performance_score: 94,
+    performance_trend: 'improving',
+    performance_delta_month: 18,
+    performance_delta_year: 100,
+    progress_delta_month: 25,
+    progress_delta_year: 100,
+    value_delta_month: 500000,
+    value_delta_year: 2200000,
+    target_completion_date: '2026-11-12',
+    start_date: '2026-03-01',
+    owner: 'Aarav Patel',
+    icon: 'Users',
+    color: '#0D9488',
+    tags: ['CRM', 'Graph DB', 'Neo4j', 'Fintech CRM', 'Golang', 'Banking'],
+    repo_name: 'nexus-relate-core',
+    github_commits_count: 124,
+    how_made: 'Built with Go (Golang) high-throughput graph ingest workers, Neo4j Graph Database for multi-hop relationship traversal, and a React/TypeScript frontend. Ingests millions of corporate registry filings, patents, and investor disclosures, parses executive board connections via Cypher queries, and computes PageRank-inspired influence scores with sub-10ms response times.',
+    architecture: 'Go Ingestion Microservices -> Neo4j Enterprise Graph Engine (Cypher) -> GraphQL Federated Gateway -> React Client with 3D Force-Directed Graph Visualizer',
+    tech_stack: ['Go (Golang)', 'Neo4j', 'Cypher', 'GraphQL', 'React', 'Tailwind CSS', 'AWS Lambda', 'Docker'],
+    milestones: [
+      { id: 'm-nr-1', title: 'Neo4j executive relation graph schema and institutional entity ingest', target_date: '2026-05-15', completed: true, completed_at: '2026-05-10' },
+      { id: 'm-nr-2', title: 'Autonomous SEC 10-K, 8-K, and corporate registry transition crawler', target_date: '2026-07-30', completed: true, completed_at: '2026-07-26' },
+      { id: 'm-nr-3', title: 'Graph shortest-path warm introduction scoring algorithm', target_date: '2026-09-20', completed: true, completed_at: '2026-09-15' },
+      { id: 'm-nr-4', title: 'Tier-1 investment bank deployment with client data residency isolation', target_date: '2026-11-12', completed: true, completed_at: '2026-11-10' },
+    ],
+    business_signals: [
+      'Mapped over 1.2 million executive and corporate advisory connections',
+      'Enabled investment bank deal team to secure 4 proprietary buyout mandates',
+    ],
+    last_updated: '2026-11-12T16:00:00Z',
+    days_since_update: 0,
+  },
+
+  // 8. Chronos Autonomous Customer Success Agent (AI Agent)
+  {
+    id: 'proj-chronos-cs',
+    name: 'Chronos AI CS Agent Swarm',
+    slug: 'chronos-ai-customer-success',
+    description: 'Predictive customer success agent swarm that monitors SaaS user telemetry, predicts churn signals 45 days in advance, and autonomously orchestrates personalized retention workflows and technical reviews.',
+    category: 'AI & ML',
+    status: 'completed',
+    stage: 'Production',
+    progress_percentage: 100,
+    project_value: 1800000, // ₹18L
+    currency: '₹',
+    realized_value: 1800000,
+    potential_value: 3900000,
+    cost_to_date: 230000,
+    health_score: 95,
+    health_status: 'Excellent',
+    performance_score: 93,
+    performance_trend: 'improving',
+    performance_delta_month: 22,
+    performance_delta_year: 100,
+    progress_delta_month: 30,
+    progress_delta_year: 100,
+    value_delta_month: 450000,
+    value_delta_year: 1800000,
+    target_completion_date: '2026-11-05',
+    start_date: '2026-03-20',
+    owner: 'Priya Sharma',
+    icon: 'Sparkles',
+    color: '#8B5CF6',
+    tags: ['AI Agents', 'Customer Success', 'Churn Prevention', 'Snowflake', 'PostHog', 'Segment'],
+    repo_name: 'chronos-retention-swarm',
+    github_commits_count: 118,
+    how_made: 'Built with TypeScript, Node.js, and Python ML pipelines. Ingests user clickstream and event metrics from Segment and PostHog into Snowflake, feeds behavioral patterns into a gradient-boosted churn predictor, and triggers autonomous LLM agents that draft contextual executive summaries and book calendar reviews via Google Calendar & Slack APIs.',
+    architecture: 'Segment/PostHog Event Stream -> Snowflake Data Cloud -> XGBoost Churn Model -> Multi-Agent Workflow Engine -> Google Calendar & Slack Webhooks',
+    tech_stack: ['TypeScript', 'Node.js', 'Python', 'XGBoost', 'Snowflake', 'Segment CDP', 'Pinecone', 'Slack API', 'Google Calendar API'],
+    milestones: [
+      { id: 'm-ch-1', title: 'Segment CDP & product telemetry real-time usage drop detector', target_date: '2026-06-10', completed: true, completed_at: '2026-06-05' },
+      { id: 'm-ch-2', title: 'Multi-agent retention playbook generator & health scorecard', target_date: '2026-08-15', completed: true, completed_at: '2026-08-10' },
+      { id: 'm-ch-3', title: 'Autonomous executive check-in scheduler & personalized deck builder', target_date: '2026-09-30', completed: true, completed_at: '2026-09-25' },
+      { id: 'm-ch-4', title: 'Live deployment across 85 enterprise SaaS accounts', target_date: '2026-11-05', completed: true, completed_at: '2026-11-02' },
+    ],
+    business_signals: [
+      'Saved ₹42L in Annual Recurring Revenue (ARR) across 14 at-risk enterprise accounts',
+      'Net Revenue Retention (NRR) improved from 104% to 118% in pilot cohort',
+    ],
+    last_updated: '2026-11-05T12:00:00Z',
+    days_since_update: 0,
+  },
+
+  // 9. NovaPay (Fintech)
   {
     id: 'proj-novapay',
     name: 'NovaPay',
@@ -82,6 +439,9 @@ export const initialProjects: Project[] = [
     tags: ['Fintech', 'Stripe', 'Banking API', 'Compliance'],
     repo_name: 'novapay-engine',
     github_commits_count: 136,
+    how_made: 'Constructed using Node.js microservices with TypeScript, PostgreSQL with row-level encryption, and Stripe Treasury API connectors. Implements automated KYC/AML verification using Sumsub and automated tax withholding calculations compliant with 12 international jurisdictions.',
+    architecture: 'Next.js Frontend -> Node.js / Express Microservices -> PostgreSQL with Row-Level Encryption -> Stripe Treasury API + Sumsub KYC',
+    tech_stack: ['TypeScript', 'Node.js', 'PostgreSQL', 'Stripe Treasury', 'Sumsub', 'Redis', 'Docker'],
     milestones: [
       { id: 'm-n-1', title: 'Regulatory compliance & KYC workflow', target_date: '2026-02-28', completed: true, completed_at: '2026-02-20' },
       { id: 'm-n-2', title: 'Multi-currency settlement engine', target_date: '2026-05-15', completed: true, completed_at: '2026-05-10' },
@@ -96,7 +456,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 3. Nexus Sentinel AI (AI & ML - Enterprise Cybersecurity)
+  // 10. Nexus Sentinel AI (AI & ML - Enterprise Cybersecurity)
   {
     id: 'proj-nexus',
     name: 'Nexus Sentinel AI',
@@ -129,6 +489,9 @@ export const initialProjects: Project[] = [
     tags: ['Cybersecurity', 'Autonomous Agents', 'eBPF', 'AWS', 'SIEM'],
     repo_name: 'nexus-sentinel-ai',
     github_commits_count: 128,
+    how_made: 'Built using Rust eBPF kernel probes for real-time packet inspection without overhead, coupled with a Python autonomous agent core that queries Datadog and Splunk SIEM APIs. Remediates vulnerabilities via dynamic AWS Security Group and IAM role modification.',
+    architecture: 'Rust eBPF Kernel Probes -> Kafka Stream -> Python Autonomous Agent -> Splunk/Datadog SIEM -> AWS IAM & CloudTrail Remediation',
+    tech_stack: ['Rust', 'eBPF', 'Python', 'Apache Kafka', 'Splunk API', 'AWS SDK', 'Docker'],
     milestones: [
       { id: 'm-nx-1', title: 'eBPF kernel packet monitor & telemetry ingest', target_date: '2026-03-15', completed: true, completed_at: '2026-03-10' },
       { id: 'm-nx-2', title: 'Autonomous zero-day remediation patch agent', target_date: '2026-05-30', completed: true, completed_at: '2026-05-25' },
@@ -143,7 +506,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 4. OrbitAI (AI & ML - Biotech Knowledge Graph)
+  // 11. OrbitAI (AI & ML - Biotech Knowledge Graph)
   {
     id: 'proj-orbitai',
     name: 'OrbitAI',
@@ -176,6 +539,9 @@ export const initialProjects: Project[] = [
     tags: ['Gemini', 'Vector DB', 'Biotech', 'RAG'],
     repo_name: 'orbit-ai-graph',
     github_commits_count: 88,
+    how_made: 'Leverages Gemini 2.5 Flash for high-speed biomedical text synthesis, Weaviate vector database for embeddings, and Three.js for interactive 3D molecular and citation graph rendering.',
+    architecture: 'PubMed Crawler -> Weaviate Vector DB -> Gemini 2.5 Flash RAG Pipeline -> Three.js 3D Graph UI',
+    tech_stack: ['Python', 'Gemini 2.5 Flash', 'Weaviate', 'Three.js', 'FastAPI', 'React'],
     milestones: [
       { id: 'm-o-1', title: 'Vector embeddings pipeline for PubMed papers', target_date: '2026-06-30', completed: true, completed_at: '2026-06-28' },
       { id: 'm-o-2', title: 'Interactive Graph Explorer with 3D force nodes', target_date: '2026-09-15', completed: true, completed_at: '2026-09-12' },
@@ -189,7 +555,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 5. CogniLegal Engine (AI & ML - LegalTech Enterprise)
+  // 12. CogniLegal Engine (AI & ML - LegalTech Enterprise)
   {
     id: 'proj-cognilegal',
     name: 'CogniLegal Engine',
@@ -222,6 +588,9 @@ export const initialProjects: Project[] = [
     tags: ['LegalTech', 'Gemini Pro', 'Doc AI', 'Compliance', 'Audit'],
     repo_name: 'cognilegal-analyzer',
     github_commits_count: 96,
+    how_made: 'Constructed with PyMuPDF OCR processing, Gemini 2.5 Pro reasoning models for clause extraction, and DocuSign integration for automated counter-offer staging.',
+    architecture: 'PyMuPDF OCR -> Gemini 2.5 Pro Clause Risk Classifier -> PostgreSQL -> DocuSign Webhooks',
+    tech_stack: ['Python', 'Gemini 2.5 Pro', 'PyMuPDF', 'FastAPI', 'DocuSign API', 'PostgreSQL'],
     milestones: [
       { id: 'm-cl-1', title: '500-page complex PDF & scan OCR parser', target_date: '2026-04-15', completed: true, completed_at: '2026-04-10' },
       { id: 'm-cl-2', title: 'Jurisdictional clause risk rating model', target_date: '2026-06-30', completed: true, completed_at: '2026-06-25' },
@@ -236,7 +605,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 6. Celesti (Agency / Client)
+  // 13. Celesti (Agency / Client)
   {
     id: 'proj-celesti',
     name: 'Celesti',
@@ -269,6 +638,9 @@ export const initialProjects: Project[] = [
     tags: ['WebGL', 'Luxury', 'E-commerce', 'Tailwind'],
     repo_name: 'celesti-web',
     github_commits_count: 84,
+    how_made: 'Engineered with React 19, Three.js custom WebGL shaders, Tailwind CSS, and Cloudflare CDN caching for sub-100ms luxury product renders worldwide.',
+    architecture: 'React 19 + Three.js Shaders -> Cloudflare Workers CDN Edge -> Stripe Checkout Gateway',
+    tech_stack: ['React 19', 'Three.js', 'WebGL', 'Tailwind CSS', 'Cloudflare Workers', 'Stripe'],
     milestones: [
       { id: 'm-c-1', title: '3D Configurator Engine & Shaders', target_date: '2026-05-10', completed: true, completed_at: '2026-05-08' },
       { id: 'm-c-2', title: 'Checkout & Luxury Payment Gateway', target_date: '2026-07-20', completed: true, completed_at: '2026-07-18' },
@@ -283,7 +655,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 7. Synthetix Ops (AI & ML - Synthetic Data Generation)
+  // 14. Synthetix Ops (AI & ML - Synthetic Data Generation)
   {
     id: 'proj-synthetix',
     name: 'Synthetix Ops',
@@ -316,6 +688,9 @@ export const initialProjects: Project[] = [
     tags: ['Synthetic Data', 'Differential Privacy', 'Fintech AI', 'LLM Tuning'],
     repo_name: 'synthetix-ops-core',
     github_commits_count: 81,
+    how_made: 'Built in Python utilizing differential privacy mechanisms with mathematically provable epsilon bounds, combined with Copula GANs for high-dimensional financial correlation preservation.',
+    architecture: 'Python Copula GAN Generator -> Differential Privacy Epsilon Evaluator -> DuckDB Analytics -> Parquet Data Sink',
+    tech_stack: ['Python', 'PyTorch', 'Differential Privacy', 'DuckDB', 'FastAPI', 'Parquet'],
     milestones: [
       { id: 'm-sy-1', title: 'Statistical correlation preservation engine', target_date: '2026-05-15', completed: true, completed_at: '2026-05-12' },
       { id: 'm-sy-2', title: 'Differential privacy epsilon budgeter', target_date: '2026-07-20', completed: true, completed_at: '2026-07-16' },
@@ -329,7 +704,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 8. Flownest (SaaS)
+  // 15. Flownest (SaaS)
   {
     id: 'proj-flownest',
     name: 'Flownest',
@@ -362,6 +737,9 @@ export const initialProjects: Project[] = [
     tags: ['CRM', 'B2B', 'React', 'Multi-tenant'],
     repo_name: 'flownest-app',
     github_commits_count: 76,
+    how_made: 'Constructed using React, PostgreSQL multi-tenant schema isolation, and automated Stripe billing integrations.',
+    architecture: 'React Client -> Express API -> PostgreSQL Multi-tenant DB -> Stripe Billing Engine',
+    tech_stack: ['React', 'Node.js', 'PostgreSQL', 'Stripe', 'Tailwind CSS'],
     milestones: [
       { id: 'm-f-1', title: 'Database schema & Multi-tenant isolation', target_date: '2026-04-15', completed: true, completed_at: '2026-04-12' },
       { id: 'm-f-2', title: 'Client Onboarding Wizard & Authentication', target_date: '2026-06-30', completed: true, completed_at: '2026-06-25' },
@@ -376,7 +754,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 9. ApexCRM (SaaS)
+  // 16. ApexCRM (SaaS)
   {
     id: 'proj-apexcrm',
     name: 'ApexCRM',
@@ -409,6 +787,9 @@ export const initialProjects: Project[] = [
     tags: ['Sales', 'Enterprise', 'Postgres', 'Analytics'],
     repo_name: 'apex-crm-v2',
     github_commits_count: 71,
+    how_made: 'Built with Next.js, PostgreSQL recursive CTEs for contact hierarchy, and OpenAI Whisper audio transcription integration.',
+    architecture: 'Next.js App -> Whisper Transcription Pipeline -> PostgreSQL Graph -> React UI',
+    tech_stack: ['Next.js', 'PostgreSQL', 'Whisper API', 'Tailwind CSS'],
     milestones: [
       { id: 'm-a-1', title: 'Account Hierarchy & Contact Graph', target_date: '2026-05-20', completed: true, completed_at: '2026-05-18' },
       { id: 'm-a-2', title: 'Meeting Audio Transcriber & Action Items', target_date: '2026-08-10', completed: true, completed_at: '2026-08-08' },
@@ -422,7 +803,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 10. PysDev Studio (Developer Tools)
+  // 17. PysDev Studio (Developer Tools)
   {
     id: 'proj-pysdev',
     name: 'PysDev Studio',
@@ -455,6 +836,9 @@ export const initialProjects: Project[] = [
     tags: ['Python', 'VSCode', 'AST', 'Rust'],
     repo_name: 'pysdev-core',
     github_commits_count: 65,
+    how_made: 'Constructed with a Rust native extension compiled via PyO3 for ultra-low latency AST parsing, integrated into a VSCode extension written in TypeScript.',
+    architecture: 'Rust AST Parser (PyO3) -> VSCode Extension Host (TypeScript) -> Language Server Protocol (LSP)',
+    tech_stack: ['Rust', 'PyO3', 'TypeScript', 'VSCode API', 'LSP'],
     milestones: [
       { id: 'm-p-1', title: 'Memory profiler C-extension core', target_date: '2026-05-30', completed: true, completed_at: '2026-06-02' },
       { id: 'm-p-2', title: 'VSCode Extension Marketplace preview', target_date: '2026-08-15', completed: true, completed_at: '2026-08-14' },
@@ -468,7 +852,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 11. Starlight Habit (Mobile App)
+  // 18. Starlight Habit (Mobile App)
   {
     id: 'proj-starlight',
     name: 'Starlight Habit',
@@ -501,6 +885,9 @@ export const initialProjects: Project[] = [
     tags: ['Swift', 'SwiftUI', 'HealthKit', 'Widget'],
     repo_name: 'starlight-ios',
     github_commits_count: 88,
+    how_made: 'Native iOS application built with SwiftUI, SwiftData, and Apple HealthKit integration for encrypted local biometric sync.',
+    architecture: 'SwiftUI Views -> SwiftData Local Engine -> Apple HealthKit Background Sync',
+    tech_stack: ['Swift 6', 'SwiftUI', 'HealthKit', 'SwiftData', 'WidgetKit'],
     milestones: [
       { id: 'm-s-1', title: 'HealthKit background sync', target_date: '2026-02-15', completed: true, completed_at: '2026-02-10' },
       { id: 'm-s-2', title: 'App Store approval & Featured Story', target_date: '2026-06-01', completed: true, completed_at: '2026-05-28' },
@@ -513,7 +900,7 @@ export const initialProjects: Project[] = [
     days_since_update: 0,
   },
 
-  // 12. Veloce Fleet (Infrastructure - Completed this year!)
+  // 19. Veloce Fleet (Infrastructure)
   {
     id: 'proj-veloce',
     name: 'Veloce Fleet',
@@ -546,6 +933,9 @@ export const initialProjects: Project[] = [
     tags: ['IoT', 'MQTT', 'Mapbox', 'Go'],
     repo_name: 'veloce-hub',
     github_commits_count: 58,
+    how_made: 'Constructed with Go (Golang) MQTT telemetry broker handling 50,000 sensor pings/sec, Redis Geo for geospatial radius queries, and Mapbox GL JS for interactive fleet tracking.',
+    architecture: 'MQTT Broker (Go) -> Redis Geo Ingestion -> WebSockets Hub -> Mapbox GL Client',
+    tech_stack: ['Go (Golang)', 'MQTT', 'Redis Geo', 'Mapbox GL', 'Docker'],
     milestones: [
       { id: 'm-v-1', title: 'MQTT Telemetry Broker prototype', target_date: '2026-03-30', completed: true, completed_at: '2026-04-05' },
       { id: 'm-v-2', title: 'Live Map Clustering & Route Optimizer', target_date: '2026-11-20', completed: true, completed_at: '2026-11-18' },
@@ -560,6 +950,48 @@ export const initialProjects: Project[] = [
 ];
 
 export const initialSnapshots: ProjectSnapshot[] = [
+  // OmniSync CRM history
+  { id: 'snp-osc-1', project_id: 'proj-omnisync-crm', snapshot_date: '2026-04-01', progress_percentage: 35, project_value: 1000000, health_score: 84, performance_score: 78, note: 'Kafka event pipeline initialized' },
+  { id: 'snp-osc-2', project_id: 'proj-omnisync-crm', snapshot_date: '2026-06-01', progress_percentage: 60, project_value: 1700000, health_score: 88, performance_score: 84, note: 'VoIP transcript NLP engine online' },
+  { id: 'snp-osc-3', project_id: 'proj-omnisync-crm', snapshot_date: '2026-08-01', progress_percentage: 82, project_value: 2300000, health_score: 93, performance_score: 90, note: 'Deal stage velocity forecasting active' },
+  { id: 'snp-osc-4', project_id: 'proj-omnisync-crm', snapshot_date: '2026-10-25', progress_percentage: 100, project_value: 2800000, health_score: 97, performance_score: 95, note: '100% enterprise rollout completed in 2026' },
+
+  // Vanguard ERP history
+  { id: 'snp-vg-1', project_id: 'proj-vanguard-erp', snapshot_date: '2026-04-01', progress_percentage: 30, project_value: 1200000, health_score: 86, performance_score: 80, note: 'SAP NetWeaver RFC bindings tested' },
+  { id: 'snp-vg-2', project_id: 'proj-vanguard-erp', snapshot_date: '2026-07-01', progress_percentage: 65, project_value: 2200000, health_score: 91, performance_score: 88, note: 'TimescaleDB IoT warehouse telemetry online' },
+  { id: 'snp-vg-3', project_id: 'proj-vanguard-erp', snapshot_date: '2026-09-01', progress_percentage: 85, project_value: 3100000, health_score: 96, performance_score: 93, note: '3-way automated invoice matching passing' },
+  { id: 'snp-vg-4', project_id: 'proj-vanguard-erp', snapshot_date: '2026-11-28', progress_percentage: 100, project_value: 3800000, health_score: 99, performance_score: 98, note: '18 plants operating on Vanguard ERP in 2026' },
+
+  // Aegis Autonomous SRE Agent history
+  { id: 'snp-as-1', project_id: 'proj-aegis-sre', snapshot_date: '2026-05-01', progress_percentage: 30, project_value: 800000, health_score: 88, performance_score: 82, note: 'eBPF kernel probe prototype operational' },
+  { id: 'snp-as-2', project_id: 'proj-aegis-sre', snapshot_date: '2026-07-01', progress_percentage: 60, project_value: 1500000, health_score: 92, performance_score: 88, note: 'LangGraph multi-agent reasoning verified' },
+  { id: 'snp-as-3', project_id: 'proj-aegis-sre', snapshot_date: '2026-09-01', progress_percentage: 82, project_value: 2100000, health_score: 95, performance_score: 93, note: 'Autonomous incident remediation in sandbox' },
+  { id: 'snp-as-4', project_id: 'proj-aegis-sre', snapshot_date: '2026-11-18', progress_percentage: 100, project_value: 2600000, health_score: 98, performance_score: 97, note: '600 microservice pods protected ending 2026' },
+
+  // Titan Global Ledger ERP history
+  { id: 'snp-tl-1', project_id: 'proj-titan-ledger', snapshot_date: '2026-05-01', progress_percentage: 35, project_value: 1100000, health_score: 87, performance_score: 82, note: 'Spring Boot virtual threads & Flyway schema' },
+  { id: 'snp-tl-2', project_id: 'proj-titan-ledger', snapshot_date: '2026-07-01', progress_percentage: 65, project_value: 2000000, health_score: 91, performance_score: 87, note: '42-currency settlement engine verified' },
+  { id: 'snp-tl-3', project_id: 'proj-titan-ledger', snapshot_date: '2026-09-01', progress_percentage: 85, project_value: 2800000, health_score: 95, performance_score: 92, note: '6-hour month end close validated' },
+  { id: 'snp-tl-4', project_id: 'proj-titan-ledger', snapshot_date: '2026-11-15', progress_percentage: 100, project_value: 3400000, health_score: 97, performance_score: 96, note: '12 subsidiaries live in 2026' },
+
+  // Sovereign Procurement Agent history
+  { id: 'snp-sp-1', project_id: 'proj-sovereign-procure', snapshot_date: '2026-05-01', progress_percentage: 30, project_value: 750000, health_score: 85, performance_score: 80, note: 'AutoGen multi-agent state machine' },
+  { id: 'snp-sp-2', project_id: 'proj-sovereign-procure', snapshot_date: '2026-07-01', progress_percentage: 60, project_value: 1400000, health_score: 89, performance_score: 85, note: 'Dynamic RFP auction engine' },
+  { id: 'snp-sp-3', project_id: 'proj-sovereign-procure', snapshot_date: '2026-09-01', progress_percentage: 82, project_value: 1900000, health_score: 94, performance_score: 91, note: 'SAP Ariba connector tested' },
+  { id: 'snp-sp-4', project_id: 'proj-sovereign-procure', snapshot_date: '2026-11-22', progress_percentage: 100, project_value: 2400000, health_score: 97, performance_score: 95, note: '₹1.8 Cr savings achieved in 2026' },
+
+  // NexusRelate Graph CRM history
+  { id: 'snp-nr-1', project_id: 'proj-nexus-relate', snapshot_date: '2026-05-01', progress_percentage: 35, project_value: 800000, health_score: 86, performance_score: 80, note: 'Neo4j Cypher graph schema online' },
+  { id: 'snp-nr-2', project_id: 'proj-nexus-relate', snapshot_date: '2026-07-01', progress_percentage: 65, project_value: 1400000, health_score: 90, performance_score: 86, note: 'SEC filing entity crawler operational' },
+  { id: 'snp-nr-3', project_id: 'proj-nexus-relate', snapshot_date: '2026-09-01', progress_percentage: 85, project_value: 1850000, health_score: 93, performance_score: 90, note: 'Warm introduction scoring verified' },
+  { id: 'snp-nr-4', project_id: 'proj-nexus-relate', snapshot_date: '2026-11-12', progress_percentage: 100, project_value: 2200000, health_score: 96, performance_score: 94, note: 'Investment bank deployment finished 2026' },
+
+  // Chronos AI CS Agent history
+  { id: 'snp-ch-1', project_id: 'proj-chronos-cs', snapshot_date: '2026-05-01', progress_percentage: 30, project_value: 550000, health_score: 84, performance_score: 79, note: 'Segment event stream and Snowflake DB' },
+  { id: 'snp-ch-2', project_id: 'proj-chronos-cs', snapshot_date: '2026-07-01', progress_percentage: 60, project_value: 1050000, health_score: 88, performance_score: 84, note: 'XGBoost churn predictive scoring' },
+  { id: 'snp-ch-3', project_id: 'proj-chronos-cs', snapshot_date: '2026-09-01', progress_percentage: 80, project_value: 1450000, health_score: 92, performance_score: 89, note: 'Autonomous outreach playbooks live' },
+  { id: 'snp-ch-4', project_id: 'proj-chronos-cs', snapshot_date: '2026-11-05', progress_percentage: 100, project_value: 1800000, health_score: 95, performance_score: 93, note: '85 enterprise SaaS accounts live in 2026' },
+
   // Aetherius history
   { id: 'snp-ae-1', project_id: 'proj-aetherius', snapshot_date: '2026-05-01', progress_percentage: 35, project_value: 1200000, health_score: 82, performance_score: 75, note: 'SAP connector prototype' },
   { id: 'snp-ae-2', project_id: 'proj-aetherius', snapshot_date: '2026-06-01', progress_percentage: 50, project_value: 1800000, health_score: 86, performance_score: 81, note: 'Snowflake vector search online' },
@@ -643,6 +1075,64 @@ export const initialSnapshots: ProjectSnapshot[] = [
 
 export const initialUpdateRecords: ProjectUpdateRecord[] = [
   {
+    id: 'upd-vg-complete',
+    project_id: 'proj-vanguard-erp',
+    project_name: 'Vanguard ERP & Supply Mesh',
+    original_message: 'Vanguard ERP has connected 18 manufacturing facilities to SAP S/4HANA with automated 3-way invoice matching. All 4 milestones completed ending 2026 with ₹38L realized valuation.',
+    ai_summary: 'Vanguard ERP: Completed 18-plant SAP rollout, GAAP 3-way invoice matching active, 100% progress verified ending 2026, ₹38,00,000 realized.',
+    confidence_score: 1.0,
+    timestamp: '2026-11-28T16:00:00Z',
+    changes: [
+      { field_name: 'progress_percentage', label: 'Progress', old_value: '85%', new_value: '100%' },
+      { field_name: 'status', label: 'Status', old_value: 'active', new_value: 'completed' },
+      { field_name: 'stage', label: 'Stage', old_value: 'Launch', new_value: 'Production' },
+      { field_name: 'realized_value', label: 'Realized Value', old_value: '₹31L', new_value: '₹38L' },
+    ],
+    business_signals: [
+      'Connected 18 industrial facilities handling ₹40+ Cr monthly stock',
+      'Automated 3-way invoice matching with 99.8% precision',
+    ],
+    user_confirmed: true,
+  },
+  {
+    id: 'upd-osc-complete',
+    project_id: 'proj-omnisync-crm',
+    project_name: 'OmniSync Enterprise CRM',
+    original_message: 'OmniSync CRM finalized bi-directional Salesforce & HubSpot event pipeline. 450,000 customer records synced with zero collisions. Project 100% delivered this year.',
+    ai_summary: 'OmniSync Enterprise CRM: 100% progress reached, 450,000 records synchronized, status marked completed, ₹28,00,000 realized value.',
+    confidence_score: 0.99,
+    timestamp: '2026-10-25T14:30:00Z',
+    changes: [
+      { field_name: 'progress_percentage', label: 'Progress', old_value: '82%', new_value: '100%' },
+      { field_name: 'status', label: 'Status', old_value: 'active', new_value: 'completed' },
+      { field_name: 'realized_value', label: 'Realized Value', old_value: '₹23L', new_value: '₹28L' },
+    ],
+    business_signals: [
+      'Synchronized 450,000 customer records across Salesforce and HubSpot',
+      'Deal turnaround time decreased by 50%',
+    ],
+    user_confirmed: true,
+  },
+  {
+    id: 'upd-as-complete',
+    project_id: 'proj-aegis-sre',
+    project_name: 'Aegis Autonomous SRE Agent',
+    original_message: 'Aegis SRE Agent multi-agent swarm successfully deployed across 600 microservice pods with LangGraph supervisor. 87% alerts auto-resolved. 100% completion verified.',
+    ai_summary: 'Aegis Autonomous SRE Agent: Progress 82% → 100%, 600 pods protected, status completed, ₹26,00,000 realized valuation.',
+    confidence_score: 0.99,
+    timestamp: '2026-11-18T15:00:00Z',
+    changes: [
+      { field_name: 'progress_percentage', label: 'Progress', old_value: '82%', new_value: '100%' },
+      { field_name: 'status', label: 'Status', old_value: 'active', new_value: 'completed' },
+      { field_name: 'realized_value', label: 'Realized Value', old_value: '₹21L', new_value: '₹26L' },
+    ],
+    business_signals: [
+      'Autonomous agents resolved 87% of P2/P3 production alerts',
+      'MTTR reduced by 76% across Kubernetes clusters',
+    ],
+    user_confirmed: true,
+  },
+  {
     id: 'upd-ae-complete',
     project_id: 'proj-aetherius',
     project_name: 'Aetherius Enterprise Cortex',
@@ -680,82 +1170,52 @@ export const initialUpdateRecords: ProjectUpdateRecord[] = [
     ],
     user_confirmed: true,
   },
-  {
-    id: 'upd-nx-complete',
-    project_id: 'proj-nexus',
-    project_name: 'Nexus Sentinel AI',
-    original_message: 'Nexus Sentinel AI has fulfilled all enterprise security pack requirements and reached 100% completion.',
-    ai_summary: 'Nexus Sentinel AI: Progress 88% → 100%, status completed, realized value ₹24,00,000.',
-    confidence_score: 0.99,
-    timestamp: '2026-10-15T14:00:00Z',
-    changes: [
-      { field_name: 'progress_percentage', label: 'Progress', old_value: '88%', new_value: '100%' },
-      { field_name: 'status', label: 'Status', old_value: 'active', new_value: 'completed' },
-    ],
-    business_signals: ['Enterprise deployment complete across multi-cloud infrastructure'],
-    user_confirmed: true,
-  },
-  {
-    id: 'upd-celesti-complete',
-    project_id: 'proj-celesti',
-    project_name: 'Celesti',
-    original_message: 'Celesti final client sign-off received. 100% milestones delivered ending September 2026.',
-    ai_summary: 'Celesti: Progress 80% → 100%, client signed off, status marked completed with ₹12L realized value.',
-    confidence_score: 0.98,
-    timestamp: '2026-09-20T10:00:00Z',
-    changes: [
-      { field_name: 'progress_percentage', label: 'Progress', old_value: '80%', new_value: '100%' },
-      { field_name: 'status', label: 'Status', old_value: 'active', new_value: 'completed' },
-    ],
-    business_signals: ['Final client milestone sign-off completed'],
-    user_confirmed: true,
-  },
 ];
 
 export const initialInsights: LunaInsight[] = [
   {
+    id: 'ins-erp-vanguard',
+    type: 'growth',
+    title: 'Vanguard ERP unifies 18 manufacturing plants with SAP S/4HANA',
+    description: 'Real-time telemetry and automated three-way GAAP invoice matching delivered ₹38L valuation realization ending 2026.',
+    project_id: 'proj-vanguard-erp',
+    project_name: 'Vanguard ERP & Supply Mesh',
+    impact: 'high',
+    timestamp: '2026-11-28T16:00:00Z',
+    action_prompt: 'Review Vanguard ERP plant inventory telemetry metrics',
+  },
+  {
+    id: 'ins-crm-omnisync',
+    type: 'milestone',
+    title: 'OmniSync Enterprise CRM synchronizes 450,000 client records',
+    description: 'Bi-directional Kafka pipelines connected Salesforce and HubSpot, reducing enterprise deal cycle times by 50%.',
+    project_id: 'proj-omnisync-crm',
+    project_name: 'OmniSync Enterprise CRM',
+    impact: 'high',
+    timestamp: '2026-10-25T15:00:00Z',
+    action_prompt: 'Generate OmniSync CRM Q4 deal velocity report',
+  },
+  {
+    id: 'ins-ai-agents-aegis',
+    type: 'growth',
+    title: 'Aegis Autonomous SRE Agent resolves 87% production incidents',
+    description: 'LangGraph multi-agent supervisor and eBPF kernel probes protect 600 microservice pods with sub-minute MTTR.',
+    project_id: 'proj-aegis-sre',
+    project_name: 'Aegis Autonomous SRE Agent',
+    impact: 'high',
+    timestamp: '2026-11-18T15:30:00Z',
+    action_prompt: 'Inspect Aegis SRE agent runbook execution logs',
+  },
+  {
     id: 'ins-milestone-portfolio-100',
     type: 'milestone',
-    title: '100% Portfolio Completion: All 12 Projects Finished This Year (2026)',
-    description: 'Every initiative across Enterprise AI, Fintech, SaaS, and Developer Tools has reached 100% progress and final delivery within this calendar year.',
+    title: 'Portfolio Scale: 19 Enterprise CRM, ERP & AI Agent Systems Completed',
+    description: 'Every CRM-based, ERP-level, and Autonomous AI Agent platform has reached 100% completion and delivered status ending this year.',
     project_id: 'proj-aetherius',
     project_name: 'Portfolio Milestone',
     impact: 'high',
-    timestamp: '2026-11-25T15:00:00Z',
-    action_prompt: 'Export Annual 2026 Portfolio Completion Audit Report',
-  },
-  {
-    id: 'ins-val-realized',
-    type: 'growth',
-    title: 'Full ₹1.67 Cr Portfolio Valuation Realized in 2026',
-    description: 'Total realized value matches 100% of the ₹1.67 Cr baseline. All project deliverables and client sign-offs have been completed successfully.',
-    project_id: 'proj-novapay',
-    project_name: 'NovaPay & Portfolio',
-    impact: 'high',
-    timestamp: '2026-11-20T12:00:00Z',
-    action_prompt: 'Generate Q4 financial summary and client review report',
-  },
-  {
-    id: 'ins-ae-1',
-    type: 'growth',
-    title: 'Aetherius Enterprise Cortex achieves 10,000-seat milestone',
-    description: 'Fortune 500 logistics partner rollout finalized with SOC-2 compliance and 420ms sub-second query latency.',
-    project_id: 'proj-aetherius',
-    project_name: 'Aetherius Enterprise Cortex',
-    impact: 'high',
-    timestamp: '2026-11-18T12:00:00Z',
-    action_prompt: 'Review Aetherius multi-year maintenance agreement',
-  },
-  {
-    id: 'ins-nx-1',
-    type: 'milestone',
-    title: 'Nexus Sentinel AI finishes enterprise SOC deployment',
-    description: 'Blocked all zero-day penetration attacks with eBPF probes; enterprise deployment completed with 98/100 health score.',
-    project_id: 'proj-nexus',
-    project_name: 'Nexus Sentinel AI',
-    impact: 'medium',
-    timestamp: '2026-10-15T15:00:00Z',
-    action_prompt: 'Review Nexus automated security reports',
+    timestamp: '2026-11-28T17:00:00Z',
+    action_prompt: 'Export Annual 2026 Enterprise Portfolio Audit Report',
   },
 ];
 
@@ -779,7 +1239,7 @@ export const initialMCPStatus: MCPStatus[] = [
     type: 'git',
     status: 'connected',
     latency: '82ms',
-    details: 'Repository commit & branch tracking across 12 repos',
+    details: 'Repository commit & branch tracking across 19 repos',
   },
   {
     name: 'Cloud Intelligence Agent',

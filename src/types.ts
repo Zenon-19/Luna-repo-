@@ -109,9 +109,12 @@ export interface Project {
   milestones: Milestone[];
   business_signals: string[];
   last_updated: string;
-  days_since_update: number;
+  days_since_update?: number;
   repo_name?: string;
   github_commits_count?: number;
+  architecture?: string;
+  tech_stack?: string[];
+  how_made?: string;
 }
 
 export interface LunaInsight {

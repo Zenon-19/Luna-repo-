@@ -16,6 +16,7 @@ import { Project, ProjectSnapshot, ProjectSortOption } from '../types';
 import { ProjectCard } from './ProjectCard';
 import { formatCurrency, getHealthBadgeColor, getStageColor } from '../utils/formatters';
 import { checkProjectStagnation } from '../utils/alerts';
+import { HighlightedText } from './HighlightedText';
 
 interface ProjectGridProps {
   projects: Project[];
@@ -24,6 +25,7 @@ interface ProjectGridProps {
   viewMode: 'grid' | 'table' | 'timeline' | 'audit';
   sortBy?: ProjectSortOption;
   onSortChange?: (sort: ProjectSortOption) => void;
+  searchQuery?: string;
   onSelectProject: (project: Project) => void;
   onQuickUpdate: (projectName: string) => void;
   onOpenNewProject: () => void;
@@ -36,6 +38,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
   viewMode,
   sortBy,
   onSortChange,
+  searchQuery = '',
   onSelectProject,
   onQuickUpdate,
   onOpenNewProject,
@@ -46,9 +49,15 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
         <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 mx-auto mb-4">
           <Sparkles className="w-6 h-6" />
         </div>
-        <h3 className="text-base font-semibold text-[#0A0A0A] mb-1">No matching projects found</h3>
+        <h3 className="text-base font-semibold text-[#0A0A0A] mb-1">
+          {searchQuery.trim()
+            ? `No projects matching "${searchQuery}"`
+            : 'No matching projects found'}
+        </h3>
         <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5">
-          Try clearing your search query, or tell Luna to create a new project with natural language.
+          {searchQuery.trim()
+            ? 'Check your search query spelling or try filtering by another category.'
+            : 'Try clearing your search query, or tell Luna to create a new project with natural language.'}
         </p>
         <button
           onClick={onOpenNewProject}
@@ -71,6 +80,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
             project={project}
             snapshots={snapshots}
             currency={currency}
+            searchQuery={searchQuery}
             onClick={() => onSelectProject(project)}
             onQuickUpdate={onQuickUpdate}
           />
@@ -141,7 +151,9 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                           className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: p.color || '#000000' }}
                         />
-                        <span className="text-sm font-semibold tracking-tight">{p.name}</span>
+                        <span className="text-sm font-semibold tracking-tight">
+                          <HighlightedText text={p.name} highlight={searchQuery} />
+                        </span>
                         {stagnation.isStagnant && (
                           <span
                             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200/80 text-amber-800 text-[10px] font-semibold"
@@ -153,10 +165,12 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-slate-400">{p.category}</td>
+                    <td className="py-4 px-6 text-slate-400">
+                      <HighlightedText text={p.category} highlight={searchQuery} />
+                    </td>
                     <td className="py-4 px-6">
                       <span className="text-xs text-slate-700 font-medium">
-                        {p.stage}
+                        <HighlightedText text={p.stage} highlight={searchQuery} />
                       </span>
                     </td>
                     <td className="py-4 px-6">
@@ -240,8 +254,12 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: project.color || '#000000' }}
                 />
-                <h4 className="font-semibold text-base text-[#0A0A0A] tracking-tight">{project.name}</h4>
-                <span className="text-xs text-slate-400">({project.category})</span>
+                <h4 className="font-semibold text-base text-[#0A0A0A] tracking-tight">
+                  <HighlightedText text={project.name} highlight={searchQuery} />
+                </h4>
+                <span className="text-xs text-slate-400">
+                  (<HighlightedText text={project.category} highlight={searchQuery} />)
+                </span>
                 <span className="text-xs px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-semibold mono-num">
                   {project.progress_percentage}%
                 </span>
@@ -281,7 +299,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                     }`}
                   />
                   <span className={m.completed ? 'line-through text-slate-400' : 'font-medium text-[#0A0A0A]'}>
-                    {m.title}
+                    <HighlightedText text={m.title} highlight={searchQuery} />
                   </span>
                 </div>
                 <div className="text-[10px] text-slate-400 flex items-center justify-between mt-auto">

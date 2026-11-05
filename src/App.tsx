@@ -31,7 +31,7 @@ import {
 import { generatePortfolioInsights } from './services/api';
 import { checkProjectStagnation } from './utils/alerts';
 
-const DATA_VERSION = 'v4_all_completed_2026';
+const DATA_VERSION = 'v5_crm_erp_ai_agents';
 
 export default function App() {
   // Local state with localStorage hydration & automatic migration to all completed projects (2026)
@@ -172,7 +172,10 @@ export default function App() {
         const matchCategory = p.category.toLowerCase().includes(q);
         const matchTags = p.tags.some((t) => t.toLowerCase().includes(q));
         const matchMilestones = p.milestones.some((m) => m.title.toLowerCase().includes(q));
-        return matchName || matchDesc || matchCategory || matchTags || matchMilestones;
+        const matchTech = p.tech_stack?.some((t) => t.toLowerCase().includes(q));
+        const matchArch = p.architecture?.toLowerCase().includes(q);
+        const matchHowMade = p.how_made?.toLowerCase().includes(q);
+        return matchName || matchDesc || matchCategory || matchTags || matchMilestones || !!matchTech || !!matchArch || !!matchHowMade;
       }
       return true;
     });
@@ -539,7 +542,18 @@ export default function App() {
                   : `${selectedCategory} Projects`}
               </h2>
               <p className="text-xs text-slate-400 mt-1">
-                {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} tracked in real-time · All 100% completed ending this year
+                {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} tracked in real-time
+                {searchQuery.trim() ? (
+                  <>
+                    {' · '}Matching &ldquo;
+                    <span className="text-black font-semibold bg-amber-100 text-amber-950 px-1 py-0.2 rounded-xs">
+                      {searchQuery}
+                    </span>
+                    &rdquo;
+                  </>
+                ) : (
+                  ' · All 100% completed ending this year'
+                )}
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
@@ -576,6 +590,7 @@ export default function App() {
             viewMode={viewMode}
             sortBy={sortBy}
             onSortChange={setSortBy}
+            searchQuery={searchQuery}
             onSelectProject={(p) => setSelectedProject(p)}
             onQuickUpdate={handleQuickUpdate}
             onOpenNewProject={() => setIsNewProjectModalOpen(true)}

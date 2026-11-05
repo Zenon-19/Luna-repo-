@@ -245,6 +245,60 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 </div>
               </div>
 
+              {/* Technical Architecture & "How It's Made" Section */}
+              {(project.how_made || project.architecture || project.tech_stack) && (
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <h4 className="text-xs font-bold text-[#0A0A0A] uppercase tracking-wider flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-black" />
+                      <span>Architecture & How It&apos;s Made</span>
+                    </h4>
+                    {project.repo_name && (
+                      <span className="text-[11px] font-mono text-slate-600 flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+                        <GitBranch className="w-3 h-3 text-slate-600" />
+                        <span>{project.repo_name}</span>
+                        {project.github_commits_count && (
+                          <span className="text-slate-400">· {project.github_commits_count} commits</span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {project.how_made && (
+                    <p className="text-xs text-slate-700 leading-relaxed mb-4">
+                      {project.how_made}
+                    </p>
+                  )}
+
+                  {project.architecture && (
+                    <div className="bg-slate-50/80 border border-slate-200/70 rounded-xl p-3.5 mb-4 text-xs font-mono text-slate-800 leading-relaxed overflow-x-auto">
+                      <span className="text-[10px] text-slate-400 uppercase font-bold font-sans block mb-1">
+                        Architecture Flow
+                      </span>
+                      {project.architecture}
+                    </div>
+                  )}
+
+                  {project.tech_stack && project.tech_stack.length > 0 && (
+                    <div>
+                      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block mb-2">
+                        Core Tech Stack & Protocols
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {project.tech_stack.map((tech) => (
+                          <span
+                            key={tech}
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 text-xs font-semibold text-slate-800 border border-slate-200/70"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* High Level 3-Metric Row */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-5 shadow-xs">
@@ -457,12 +511,41 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 4: MILESTONES */}
+          {/* TAB 4: MILESTONES & TIMELINE */}
           {activeTab === 'milestones' && (
             <div className="space-y-4">
+              {/* Timeline Horizon Banner */}
+              <div className="bg-slate-50/70 border border-slate-100 rounded-2xl p-5 shadow-xs">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <span className="text-xs font-bold text-[#0A0A0A] uppercase tracking-wider flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-black" />
+                    <span>Project Timeline & Delivery Horizon</span>
+                  </span>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {project.progress_percentage}% Delivered (Ending 2026)
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="bg-white border border-slate-200/70 p-3 rounded-xl">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Project Initiation</span>
+                    <span className="font-semibold text-slate-800">{project.start_date}</span>
+                  </div>
+                  <div className="bg-white border border-slate-200/70 p-3 rounded-xl">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Target Completion</span>
+                    <span className="font-semibold text-slate-800">{project.target_completion_date} (This Year)</span>
+                  </div>
+                  <div className="bg-white border border-slate-200/70 p-3 rounded-xl">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">Milestone Velocity</span>
+                    <span className="font-semibold text-emerald-700">
+                      {project.milestones.filter((m) => m.completed).length} of {project.milestones.length} Completed (100%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Milestone Deliverables
+                  Milestone Deliverables & Timeline
                 </span>
                 <button
                   onClick={() => setIsAddingMilestone(!isAddingMilestone)}

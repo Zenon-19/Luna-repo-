@@ -16,11 +16,13 @@ import {
 import { Project, ProjectSnapshot } from '../types';
 import { formatCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
 import { checkProjectStagnation } from '../utils/alerts';
+import { HighlightedText } from './HighlightedText';
 
 interface ProjectCardProps {
   project: Project;
   snapshots?: ProjectSnapshot[];
   currency: string;
+  searchQuery?: string;
   onClick: () => void;
   onQuickUpdate: (projectName: string) => void;
 }
@@ -29,6 +31,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
   snapshots = [],
   currency,
+  searchQuery = '',
   onClick,
   onQuickUpdate,
 }) => {
@@ -58,7 +61,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-base text-[#0A0A0A] group-hover:text-black transition-colors tracking-tight">
-                  {project.name}
+                  <HighlightedText text={project.name} highlight={searchQuery} />
                 </h3>
                 {project.status === 'completed' && (
                   <span className="text-[10px] uppercase font-bold text-slate-400">
@@ -81,7 +84,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                 )}
               </div>
               <span className="text-xs text-slate-400 font-normal">
-                {project.stage} Stage · {project.category}
+                <HighlightedText text={project.stage} highlight={searchQuery} /> Stage · <HighlightedText text={project.category} highlight={searchQuery} />
               </span>
             </div>
           </div>
@@ -98,9 +101,28 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         </div>
 
         {/* Description */}
-        <p className="text-xs text-slate-500 line-clamp-2 mb-5 leading-relaxed">
-          {project.description}
+        <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+          <HighlightedText text={project.description} highlight={searchQuery} />
         </p>
+
+        {/* Tags with query highlighting */}
+        {project.tags && project.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-5">
+            {project.tags.slice(0, 4).map((tag) => (
+              <span
+                key={tag}
+                className="px-2 py-0.5 rounded-md bg-slate-100/80 text-[10px] font-medium text-slate-600 border border-slate-200/60"
+              >
+                <HighlightedText text={tag} highlight={searchQuery} />
+              </span>
+            ))}
+            {project.tags.length > 4 && (
+              <span className="text-[10px] text-slate-400 self-center">
+                +{project.tags.length - 4}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Progression Section */}
         <div className={`mb-5 p-4 rounded-xl border ${
