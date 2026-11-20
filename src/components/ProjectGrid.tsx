@@ -10,7 +10,8 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
-  ArrowUpDown
+  ArrowUpDown,
+  Share2
 } from 'lucide-react';
 import { Project, ProjectSnapshot, ProjectSortOption } from '../types';
 import { ProjectCard } from './ProjectCard';
@@ -29,6 +30,7 @@ interface ProjectGridProps {
   searchQuery?: string;
   onSelectProject: (project: Project) => void;
   onQuickUpdate: (projectName: string) => void;
+  onShareProject?: (project: Project) => void;
   onOpenNewProject: () => void;
 }
 
@@ -42,6 +44,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
   searchQuery = '',
   onSelectProject,
   onQuickUpdate,
+  onShareProject,
   onOpenNewProject,
 }) => {
   if (projects.length === 0) {
@@ -84,6 +87,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
             searchQuery={searchQuery}
             onClick={() => onSelectProject(project)}
             onQuickUpdate={onQuickUpdate}
+            onShare={onShareProject}
           />
         ))}
       </div>
@@ -282,15 +286,30 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onQuickUpdate(p.name);
-                        }}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-black hover:text-white text-slate-700 text-xs font-semibold transition-all cursor-pointer"
-                      >
-                        Update
-                      </button>
+                      <div className="inline-flex items-center gap-1.5">
+                        {onShareProject && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onShareProject(p);
+                            }}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-black text-slate-600 hover:text-black text-xs font-semibold transition-all cursor-pointer"
+                            title="Share client progress link"
+                          >
+                            <Share2 className="w-3 h-3" />
+                            <span>Share</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onQuickUpdate(p.name);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-black hover:text-white text-slate-700 text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          Update
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -368,12 +387,23 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                   </span>
                 )}
               </div>
-              <button
-                onClick={() => onSelectProject(project)}
-                className="text-xs text-black hover:underline font-semibold self-start sm:self-auto cursor-pointer"
-              >
-                Open Project Intelligence →
-              </button>
+              <div className="flex items-center gap-3 self-start sm:self-auto">
+                {onShareProject && (
+                  <button
+                    onClick={() => onShareProject(project)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-black text-xs font-semibold text-slate-700 hover:text-black transition-colors cursor-pointer"
+                  >
+                    <Share2 className="w-3 h-3" />
+                    <span>Share Client View</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => onSelectProject(project)}
+                  className="text-xs text-black hover:underline font-semibold cursor-pointer"
+                >
+                  Open Project Intelligence →
+                </button>
+              </div>
             </div>
 
           {/* Milestones list */}

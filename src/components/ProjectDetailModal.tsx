@@ -19,7 +19,8 @@ import {
   Flame,
   GitBranch,
   User,
-  AlertTriangle
+  AlertTriangle,
+  Share2
 } from 'lucide-react';
 import { Project, ProjectSnapshot, ProjectUpdateRecord, Milestone } from '../types';
 import { formatCurrency, formatExactCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
@@ -36,6 +37,7 @@ interface ProjectDetailModalProps {
   onAddMilestone: (projectId: string, title: string, targetDate: string) => void;
   onQuickUpdate: (projectName: string) => void;
   onExportAuditTrail?: (projectId: string) => void;
+  onShareProject?: (project: Project) => void;
 }
 
 export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
@@ -48,6 +50,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   onAddMilestone,
   onQuickUpdate,
   onExportAuditTrail,
+  onShareProject,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'progress' | 'financials' | 'milestones' | 'audit'>(
     'overview'
@@ -140,12 +143,24 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 self-end sm:self-auto">
+            {onShareProject && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onShareProject(project);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:border-black text-slate-800 hover:text-black text-xs font-semibold shadow-xs transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Share Client View</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 onClose();
                 onQuickUpdate(project.name);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer whitespace-nowrap"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Update with Luna</span>

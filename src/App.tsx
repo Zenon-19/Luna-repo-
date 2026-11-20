@@ -11,6 +11,9 @@ import { NewProjectModal } from './components/NewProjectModal';
 import { ExportReportModal } from './components/ExportReportModal';
 import { MCPStatusModal } from './components/MCPStatusModal';
 import { ProjectSortDropdown } from './components/ProjectSortDropdown';
+import { OnboardingEmptyState } from './components/OnboardingEmptyState';
+import { ShareProjectModal } from './components/ShareProjectModal';
+import { ClientProgressView } from './components/ClientProgressView';
 
 import {
   initialProjects,
@@ -27,12 +30,14 @@ import {
   AIParseResult,
   MCPStatus,
   ProjectSortOption,
+  ClientSharePayload,
 } from './types';
 import { generatePortfolioInsights } from './services/api';
 import { checkProjectStagnation } from './utils/alerts';
 import { monitorProjectBudget } from './utils/budget';
+import { decodeClientSharePayload } from './utils/clientShare';
 
-const DATA_VERSION = 'v6_budget_monitor';
+const DATA_VERSION = 'v7_clean_slate_client_share';
 
 export default function App() {
   // Local state with localStorage hydration & automatic migration to all completed projects (2026)
@@ -87,8 +92,22 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'grid' | 'table' | 'timeline' | 'audit'>('grid');
   const [sortBy, setSortBy] = useState<ProjectSortOption>('default');
 
+  // Client Share Link detection (?share=...)
+  const [shareTokenState, setShareTokenState] = useState<{
+    payload: ClientSharePayload | null;
+    invalid: boolean;
+  }>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('share');
+    if (!token) return { payload: null, invalid: false };
+    const decoded = decodeClientSharePayload(token);
+    return decoded ? { payload: decoded, invalid: false } : { payload: null, invalid: true };
+  });
+  const [previewClientPayload, setPreviewClientPayload] = useState<ClientSharePayload | null>(null);
+
   // Modals & Active selections
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [shareModalProject, setShareModalProject] = useState<Project | null>(null);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportModalConfig, setExportModalConfig] = useState<{
@@ -337,12 +356,12 @@ export default function App() {
       category: newProj.category || 'SaaS',
       status: newProj.status || 'active',
       stage: newProj.stage || 'Development',
-      progress_percentage: newProj.progress_percentage || 15,
-      project_value: newProj.project_value || 500000,
+      progress_percentage: typeof newProj.progress_percentage === 'number' ? newProj.progress_percentage : 15,
+      project_value: typeof newProj.project_value === 'number' ? newProj.project_value : 500000,
       currency: currency,
-      realized_value: newProj.realized_value || 100000,
-      potential_value: newProj.potential_value || 1000000,
-      cost_to_date: newProj.cost_to_date || 50000,
+      realized_value: typeof newProj.realized_value === 'number' ? newProj.realized_value : 100000,
+      potential_value: typeof newProj.potential_value === 'number' ? newProj.potential_value : 1000000,
+      cost_to_date: typeof newProj.cost_to_date === 'number' ? newProj.cost_to_date : 50000,
       health_score: newProj.health_score || 85,
       health_status: newProj.health_status || 'Healthy',
       performance_score: newProj.performance_score || 80,
@@ -490,6 +509,62 @@ export default function App() {
     setPrefillMessage(`${projectName} update: `);
   };
 
+  const handleClearWorkspace = () => {
+    setProjects([]);
+    setSnapshots([]);
+    setUpdateRecords([]);
+    setInsights([]);
+    setRecentRecord(null);
+    setSelectedProject(null);
+    setShareModalProject(null);
+    setSelectedCategory('All');
+    setSelectedStatus('all');
+    setSearchQuery('');
+  };
+
+  // 1. Standalone Shared Client Portal View (?share=...)
+  if (shareTokenState.payload) {
+    return <ClientProgressView payload={shareTokenState.payload} />;
+  }
+
+  // 2. Invalid/Malformed Share Token fallback
+  if (shareTokenState.invalid) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] text-[#0A0A0A] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white border border-slate-200/80 rounded-3xl p-8 text-center shadow-xs">
+          <h1 className="text-lg font-semibold text-[#0A0A0A] mb-2">
+            Share Link Unavailable
+          </h1>
+          <p className="text-xs text-slate-500 leading-relaxed mb-6">
+            This client progress link appears incomplete or invalid. Request a fresh link from the project owner, or open your own workspace.
+          </p>
+          <button
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('share');
+              window.history.replaceState({}, '', url.toString());
+              setShareTokenState({ payload: null, invalid: false });
+            }}
+            className="px-5 py-2.5 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-semibold transition-colors cursor-pointer"
+          >
+            Open Portfolio Workspace
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. In-app Full Client Portal Preview Mode
+  if (previewClientPayload) {
+    return (
+      <ClientProgressView
+        payload={previewClientPayload}
+        isPreviewMode
+        onExitPreview={() => setPreviewClientPayload(null)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#0A0A0A] flex flex-col font-sans selection:bg-slate-200 selection:text-black pb-32">
       {/* Header with Search, Filter & Currency Controls */}
@@ -507,99 +582,109 @@ export default function App() {
         selectedCategory={selectedCategory}
         onSelectCategory={setSelectedCategory}
         categories={categories}
+        projectCount={projects.length}
+        onClearWorkspace={handleClearWorkspace}
       />
 
       {/* Main App Body Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-6 sm:px-10 py-8 sm:py-10">
-        {/* KPI Cards Section */}
-        <KPISection
-          projects={projects}
-          snapshots={snapshots}
-          currency={currency}
-          onFilterStatus={(st) => setSelectedStatus((prev) => (prev === st ? 'all' : st))}
-          selectedStatus={selectedStatus}
-        />
-
-        {/* Growth Analytics Canvas (Shown on Grid & Table & Timeline views) */}
-        {viewMode !== 'audit' && (
-          <PortfolioGrowthChart projects={projects} snapshots={snapshots} currency={currency} />
-        )}
-
-        {/* AI Proactive Intelligence Panel */}
-        {viewMode !== 'audit' && (
-          <InsightsPanel
-            insights={insights}
-            onApplyPrompt={(prompt) => setPrefillMessage(prompt)}
-            onRefreshInsights={handleRefreshInsights}
-            isRefreshing={isRefreshingInsights}
-          />
-        )}
-
-        {/* Section Heading for Projects in Clean Minimalism */}
-        {viewMode !== 'audit' && (
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
-                {selectedStatus === 'completed' || projects.every((p) => p.status === 'completed')
-                  ? 'Completed Projects (Ending 2026)'
-                  : selectedCategory === 'All'
-                  ? 'Active Projects'
-                  : `${selectedCategory} Projects`}
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} tracked in real-time
-                {searchQuery.trim() ? (
-                  <>
-                    {' · '}Matching &ldquo;
-                    <span className="text-black font-semibold bg-amber-100 text-amber-950 px-1 py-0.2 rounded-xs">
-                      {searchQuery}
-                    </span>
-                    &rdquo;
-                  </>
-                ) : (
-                  ' · All 100% completed ending this year'
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Sorting Dropdown Component */}
-              <ProjectSortDropdown sortBy={sortBy} onSortChange={setSortBy} />
-
-              <button
-                onClick={() => setSelectedStatus((prev) => (prev === 'archived' ? 'all' : 'archived'))}
-                className="text-xs font-semibold text-black hover:underline cursor-pointer"
-              >
-                {selectedStatus === 'archived' ? 'View All Projects' : 'View Archive'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Active View Mode Content */}
-        {viewMode === 'audit' ? (
-          <AuditTrailView
-            updateRecords={updateRecords}
-            onSelectProjectName={(name) => {
-              const found = projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
-              if (found) setSelectedProject(found);
-            }}
-            onExportAuditTrail={() =>
-              handleOpenExportModal({ initialReportType: 'audit_trail', initialProjectId: 'all' })
-            }
+        {projects.length === 0 ? (
+          <OnboardingEmptyState
+            onCreateProject={() => setIsNewProjectModalOpen(true)}
+            onStartWithPrompt={(prompt) => setPrefillMessage(prompt)}
           />
         ) : (
-          <ProjectGrid
-            projects={filteredProjects}
-            snapshots={snapshots}
-            currency={currency}
-            viewMode={viewMode}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            searchQuery={searchQuery}
-            onSelectProject={(p) => setSelectedProject(p)}
-            onQuickUpdate={handleQuickUpdate}
-            onOpenNewProject={() => setIsNewProjectModalOpen(true)}
-          />
+          <>
+            {/* KPI Cards Section */}
+            <KPISection
+              projects={projects}
+              snapshots={snapshots}
+              currency={currency}
+              onFilterStatus={(st) => setSelectedStatus((prev) => (prev === st ? 'all' : st))}
+              selectedStatus={selectedStatus}
+            />
+
+            {/* Growth Analytics Canvas (Shown on Grid & Table & Timeline views) */}
+            {viewMode !== 'audit' && (
+              <PortfolioGrowthChart projects={projects} snapshots={snapshots} currency={currency} />
+            )}
+
+            {/* AI Proactive Intelligence Panel */}
+            {viewMode !== 'audit' && (
+              <InsightsPanel
+                insights={insights}
+                onApplyPrompt={(prompt) => setPrefillMessage(prompt)}
+                onRefreshInsights={handleRefreshInsights}
+                isRefreshing={isRefreshingInsights}
+              />
+            )}
+
+            {/* Section Heading for Projects in Clean Minimalism */}
+            {viewMode !== 'audit' && (
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+                    {selectedStatus === 'completed' || (projects.length > 0 && projects.every((p) => p.status === 'completed'))
+                      ? 'Completed Projects'
+                      : selectedCategory === 'All'
+                      ? 'Active Projects'
+                      : `${selectedCategory} Projects`}
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} tracked in real-time
+                    {searchQuery.trim() ? (
+                      <>
+                        {' · '}Matching &ldquo;
+                        <span className="text-black font-semibold bg-amber-100 text-amber-950 px-1 py-0.2 rounded-xs">
+                          {searchQuery}
+                        </span>
+                        &rdquo;
+                      </>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Sorting Dropdown Component */}
+                  <ProjectSortDropdown sortBy={sortBy} onSortChange={setSortBy} />
+
+                  <button
+                    onClick={() => setSelectedStatus((prev) => (prev === 'archived' ? 'all' : 'archived'))}
+                    className="text-xs font-semibold text-black hover:underline cursor-pointer"
+                  >
+                    {selectedStatus === 'archived' ? 'View All Projects' : 'View Archive'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Active View Mode Content */}
+            {viewMode === 'audit' ? (
+              <AuditTrailView
+                updateRecords={updateRecords}
+                onSelectProjectName={(name) => {
+                  const found = projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
+                  if (found) setSelectedProject(found);
+                }}
+                onExportAuditTrail={() =>
+                  handleOpenExportModal({ initialReportType: 'audit_trail', initialProjectId: 'all' })
+                }
+              />
+            ) : (
+              <ProjectGrid
+                projects={filteredProjects}
+                snapshots={snapshots}
+                currency={currency}
+                viewMode={viewMode}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                searchQuery={searchQuery}
+                onSelectProject={(p) => setSelectedProject(p)}
+                onQuickUpdate={handleQuickUpdate}
+                onShareProject={(p) => setShareModalProject(p)}
+                onOpenNewProject={() => setIsNewProjectModalOpen(true)}
+              />
+            )}
+          </>
         )}
       </main>
 
@@ -607,6 +692,7 @@ export default function App() {
       <LunaDock
         projects={projects}
         onApplyUpdate={handleApplyUpdate}
+        onCreateProject={handleCreateProject}
         recentRecord={recentRecord}
         currency={currency}
         prefillMessage={prefillMessage}
@@ -627,8 +713,21 @@ export default function App() {
           onExportAuditTrail={(projectId) =>
             handleOpenExportModal({ initialReportType: 'audit_trail', initialProjectId: projectId })
           }
+          onShareProject={(p) => setShareModalProject(p)}
         />
       )}
+
+      {/* Share Progress with Client Modal */}
+      <ShareProjectModal
+        project={shareModalProject}
+        snapshots={snapshots}
+        updateRecords={updateRecords}
+        onClose={() => setShareModalProject(null)}
+        onOpenFullPreview={(payload) => {
+          setShareModalProject(null);
+          setPreviewClientPayload(payload);
+        }}
+      />
 
       {/* New Project Modal */}
       <NewProjectModal

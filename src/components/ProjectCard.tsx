@@ -11,7 +11,8 @@ import {
   Flame,
   AlertTriangle,
   GitBranch,
-  Calendar
+  Calendar,
+  Share2
 } from 'lucide-react';
 import { Project, ProjectSnapshot } from '../types';
 import { formatCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
@@ -26,6 +27,7 @@ interface ProjectCardProps {
   searchQuery?: string;
   onClick: () => void;
   onQuickUpdate: (projectName: string) => void;
+  onShare?: (project: Project) => void;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -35,6 +37,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   searchQuery = '',
   onClick,
   onQuickUpdate,
+  onShare,
 }) => {
   const healthBadge = getHealthBadgeColor(project.health_score);
   const stageBadge = getStageColor(project.stage);
@@ -365,17 +368,32 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           )}
         </div>
 
-        {/* Quick Update Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onQuickUpdate(project.name);
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-black hover:text-white text-slate-700 text-xs font-semibold transition-all cursor-pointer"
-        >
-          <MessageSquarePlus className="w-3 h-3" />
-          <span>Update</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onShare && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShare(project);
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-black hover:text-black text-slate-600 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
+              title="Share read-only client progress link"
+            >
+              <Share2 className="w-3 h-3" />
+              <span>Share</span>
+            </button>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onQuickUpdate(project.name);
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-black hover:text-white text-slate-700 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap"
+          >
+            <MessageSquarePlus className="w-3 h-3" />
+            <span>Update</span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -11,7 +11,8 @@ import {
   Calendar,
   History,
   TrendingUp,
-  Cpu
+  Cpu,
+  Trash2
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -28,6 +29,8 @@ interface HeaderProps {
   selectedCategory: string;
   onSelectCategory: (cat: string) => void;
   categories: string[];
+  projectCount?: number;
+  onClearWorkspace?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,7 +47,10 @@ export const Header: React.FC<HeaderProps> = ({
   selectedCategory,
   onSelectCategory,
   categories,
+  projectCount = 0,
+  onClearWorkspace,
 }) => {
+  const [confirmClear, setConfirmClear] = React.useState(false);
   return (
     <header className="sticky top-0 z-30 bg-[#FAFAFA]/95 backdrop-blur-md border-b border-slate-100 px-6 lg:px-10 py-4 transition-all">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
@@ -190,20 +196,54 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
+          {/* Clear Workspace (two-step confirmation) */}
+          {projectCount > 0 && onClearWorkspace && (
+            confirmClear ? (
+              <div className="flex items-center gap-1 bg-rose-50 border border-rose-200 rounded-xl px-2 py-1 text-xs">
+                <button
+                  onClick={() => {
+                    onClearWorkspace();
+                    setConfirmClear(false);
+                  }}
+                  className="px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-semibold cursor-pointer whitespace-nowrap"
+                >
+                  Confirm Clear
+                </button>
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  className="px-2 py-1 rounded-lg text-slate-600 hover:text-black font-medium cursor-pointer whitespace-nowrap"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-xs text-slate-600 hover:text-rose-700 transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+                title="Remove all projects and reset workspace"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline font-semibold">Clear All</span>
+              </button>
+            )
+          )}
+
           {/* Export Report */}
-          <button
-            onClick={onOpenExportModal}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs text-slate-700 hover:text-black transition-all shadow-xs cursor-pointer"
-            title="Export Portfolio Report (Markdown / JSON)"
-          >
-            <FileText className="w-3.5 h-3.5 text-slate-400" />
-            <span className="hidden sm:inline font-semibold">Export</span>
-          </button>
+          {projectCount > 0 && (
+            <button
+              onClick={onOpenExportModal}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs text-slate-700 hover:text-black transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
+              title="Export Portfolio Report (Markdown / JSON)"
+            >
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden sm:inline font-semibold">Export</span>
+            </button>
+          )}
 
           {/* Add Project */}
           <button
             onClick={onOpenNewProject}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Project</span>

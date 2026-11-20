@@ -8,6 +8,7 @@ interface NewProjectModalProps {
   onClose: () => void;
   onCreateProject: (project: Partial<Project>) => void;
   currency: string;
+  defaultMode?: 'ai' | 'manual';
 }
 
 export const NewProjectModal: React.FC<NewProjectModalProps> = ({
@@ -15,8 +16,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   onClose,
   onCreateProject,
   currency,
+  defaultMode = 'manual',
 }) => {
-  const [activeMode, setActiveMode] = useState<'ai' | 'manual'>('ai');
+  const [activeMode, setActiveMode] = useState<'ai' | 'manual'>(defaultMode);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -27,8 +29,12 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
   const [stage, setStage] = useState<ProjectStage>('Development');
   const [progress, setProgress] = useState(20);
   const [projectValue, setProjectValue] = useState(500000);
-  const [owner, setOwner] = useState('Lakshya Lohani');
-  const [tags, setTags] = useState('React, B2B');
+  const [costToDate, setCostToDate] = useState(75000);
+  const [targetDate, setTargetDate] = useState(
+    new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0]
+  );
+  const [owner, setOwner] = useState('');
+  const [tags, setTags] = useState('');
 
   if (!isOpen) return null;
 
@@ -55,43 +61,63 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
+    const val = Number(projectValue) || 0;
+    const cost = Math.max(0, Number(costToDate) || 0);
+    const prog = Math.min(100, Math.max(0, Number(progress) || 0));
+
     onCreateProject({
       name: name.trim(),
       slug: name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-      description: description.trim() || 'New portfolio project tracked by Luna 0.1.',
+      description: description.trim() || 'Active project tracked in workspace.',
       category,
-      status: 'active',
-      stage,
-      progress_percentage: Number(progress),
-      project_value: Number(projectValue),
+      status: prog === 100 ? 'completed' : 'active',
+      stage: prog === 100 ? 'Completed' : stage,
+      progress_percentage: prog,
+      project_value: val,
       currency,
-      realized_value: Math.round(Number(projectValue) * 0.25),
-      potential_value: Math.round(Number(projectValue) * 1.8),
-      cost_to_date: Math.round(Number(projectValue) * 0.15),
-      health_score: 85,
+      realized_value: Math.round(val * (prog / 100)),
+      potential_value: Math.round(val * 1.5),
+      cost_to_date: cost,
+      health_score: 88,
       health_status: 'Healthy',
-      performance_score: 80,
+      performance_score: 85,
       performance_trend: 'improving',
       performance_delta_month: 10,
       performance_delta_year: 25,
-      progress_delta_month: 10,
-      progress_delta_year: 20,
-      value_delta_month: Math.round(Number(projectValue) * 0.1),
-      value_delta_year: Number(projectValue),
-      target_completion_date: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+      progress_delta_month: prog,
+      progress_delta_year: prog,
+      value_delta_month: Math.round(val * 0.1),
+      value_delta_year: val,
+      target_completion_date:
+        targetDate || new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
       start_date: new Date().toISOString().split('T')[0],
-      owner: owner.trim() || 'Founder',
+      owner: owner.trim() || 'Project Lead',
       icon: 'Layers',
-      color: '#6366F1',
+      color: '#0A0A0A',
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       milestones: [
-        { id: `m-${Date.now()}-1`, title: 'Core Architecture Spec', target_date: '2026-09-30', completed: true },
-        { id: `m-${Date.now()}-2`, title: 'MVP Deliverable', target_date: '2026-11-15', completed: false },
+        {
+          id: `m-${Date.now()}-1`,
+          title: 'Project Kickoff & Scope Sign-off',
+          target_date: new Date().toISOString().split('T')[0],
+          completed: true,
+          completed_at: new Date().toISOString().split('T')[0],
+        },
+        {
+          id: `m-${Date.now()}-2`,
+          title: 'Primary Deliverable',
+          target_date:
+            targetDate || new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+          completed: prog === 100,
+        },
       ],
-      business_signals: ['Project initialized in portfolio'],
+      business_signals: ['Project initialized and ready for milestone tracking'],
       last_updated: new Date().toISOString(),
       days_since_update: 0,
     });
+    setName('');
+    setDescription('');
+    setTags('');
     onClose();
   };
 
@@ -227,7 +253,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-slate-600 block mb-1 font-medium">Stage</label>
                   <select
@@ -256,25 +282,48 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-black mono-num"
                   />
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-slate-600 block mb-1 font-medium">Valuation ({currency})</label>
+                  <label className="text-xs text-slate-600 block mb-1 font-medium">Budget / Value ({currency})</label>
                   <input
                     type="number"
+                    min="0"
                     value={projectValue}
                     onChange={(e) => setProjectValue(Number(e.target.value))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-black mono-num"
                   />
                 </div>
+                <div>
+                  <label className="text-xs text-slate-600 block mb-1 font-medium">Cost to Date ({currency})</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={costToDate}
+                    onChange={(e) => setCostToDate(Number(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-black mono-num"
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-slate-600 block mb-1 font-medium">Owner</label>
+                  <label className="text-xs text-slate-600 block mb-1 font-medium">Target Completion</label>
+                  <input
+                    type="date"
+                    value={targetDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-black mono-num"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-slate-600 block mb-1 font-medium">Owner / Lead</label>
                   <input
                     type="text"
                     value={owner}
                     onChange={(e) => setOwner(e.target.value)}
+                    placeholder="e.g. Alex Rivera"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-black"
                   />
                 </div>
@@ -284,6 +333,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                     type="text"
                     value={tags}
                     onChange={(e) => setTags(e.target.value)}
+                    placeholder="e.g. Web, Client"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-black"
                   />
                 </div>

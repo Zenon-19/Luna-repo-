@@ -17,12 +17,13 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Project, AIParseResult, ProjectUpdateRecord } from '../types';
-import { parseNaturalLanguageUpdate, askLunaQuery } from '../services/api';
+import { parseNaturalLanguageUpdate, askLunaQuery, createProjectFromPrompt } from '../services/api';
 import { LunaConfirmationCard } from './LunaConfirmationCard';
 
 interface LunaDockProps {
   projects: Project[];
   onApplyUpdate: (result: AIParseResult, originalMessage: string) => void;
+  onCreateProject?: (project: Partial<Project>) => void;
   recentRecord: ProjectUpdateRecord | null;
   currency: string;
   prefillMessage?: string;
@@ -32,6 +33,7 @@ interface LunaDockProps {
 export const LunaDock: React.FC<LunaDockProps> = ({
   projects,
   onApplyUpdate,
+  onCreateProject,
   recentRecord,
   currency,
   prefillMessage,
@@ -109,6 +111,13 @@ export const LunaDock: React.FC<LunaDockProps> = ({
       if (mode === 'ask') {
         const res = await askLunaQuery(msg, projects, [], []);
         setAnswerResponse(res.answer);
+      } else if (
+        onCreateProject &&
+        (projects.length === 0 || /^(create|add|start)\s+(a\s+)?(new\s+)?project\b/i.test(msg))
+      ) {
+        const created = await createProjectFromPrompt(msg);
+        onCreateProject({ ...created, currency });
+        setInputMessage('');
       } else {
         // Update mode
         const parseResult = await parseNaturalLanguageUpdate(msg, projects);
@@ -146,24 +155,24 @@ export const LunaDock: React.FC<LunaDockProps> = ({
     setInputMessage('');
   };
 
-  const samplePrompts = [
-    {
-      label: 'Aetherius: 85% + ₹36L',
-      prompt: 'Aetherius Enterprise Cortex completed SOC-2 Type II audit. Progress is now 85%, value updated to ₹36 lakh.',
-    },
-    {
-      label: 'Nexus: 92% + ₹26L',
-      prompt: 'Nexus Sentinel AI finished enterprise SIEM streaming. Progress 92%, estimated value ₹26L.',
-    },
-    {
-      label: 'CogniLegal: Redline Engine',
-      prompt: 'CogniLegal Engine completed the automated redlining editor. Progress 75%, value now ₹18 lakh.',
-    },
-    {
-      label: 'NovaPay: GA Launch Pilot',
-      prompt: 'NovaPay tax automation module is complete. Processed ₹42L test volume. Progress 95%, estimated value ₹28L.',
-    },
-  ];
+  const samplePrompts = projects.length === 0
+    ? [
+        {
+          label: 'Create: Client Portal',
+          prompt: 'Create a new project called Client Portal Redesign in SaaS category at 25% progress with value ₹5 lakh.',
+        },
+        {
+          label: 'Create: CRM Rollout',
+          prompt: 'Create a new project called Enterprise CRM Rollout in Agency / Client category at 40% progress with value ₹12 lakh.',
+        },
+      ]
+    : projects.slice(0, 3).map((p) => {
+        const nextProg = Math.min(100, p.progress_percentage + 15);
+        return {
+          label: `${p.name}: ${nextProg}%`,
+          prompt: `${p.name} progress is now ${nextProg}% with updated milestone delivery.`,
+        };
+      });
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 p-3 sm:p-5 pointer-events-none">
@@ -318,8 +327,10 @@ export const LunaDock: React.FC<LunaDockProps> = ({
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder={
                   mode === 'update'
-                    ? 'Tell Luna what changed... (e.g. Celesti is now 80% complete, valuation ₹12L)'
-                    : 'Ask Luna anything... (e.g. Which enterprise project has the highest velocity?)'
+                    ? projects.length === 0
+                      ? 'Describe your first project to create it... (e.g. Create a new project called Client Portal at 25% progress)'
+                      : 'Tell Luna what changed... (e.g. Project Name is now 80% complete, value ₹12L)'
+                    : 'Ask Luna anything about your portfolio...'
                 }
                 className="w-full bg-slate-50/70 border border-slate-200 focus:bg-white focus:border-black focus:ring-1 focus:ring-black rounded-2xl pl-11 pr-14 py-3.5 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-all shadow-xs"
                 disabled={isProcessing}

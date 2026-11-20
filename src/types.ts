@@ -140,6 +140,7 @@ export interface AIParseResult {
   updated_fields?: {
     progress_percentage?: number;
     project_value?: number;
+    cost_to_date?: number;
     status?: ProjectStatus;
     stage?: ProjectStage;
     health_score?: number;
@@ -157,3 +158,47 @@ export interface MCPStatus {
   latency: string;
   details: string;
 }
+
+export interface ClientShareMilestone {
+  id: string;
+  title: string;
+  target_date: string;
+  completed: boolean;
+  completed_at?: string;
+}
+
+export interface ClientShareSnapshot {
+  date: string;
+  progress_percentage: number;
+  note?: string;
+}
+
+export interface ClientShareUpdate {
+  date: string;
+  summary: string;
+}
+
+export interface ClientSharePayload {
+  v: 1;
+  shared_at: string;
+  client_note?: string;
+  project: {
+    name: string;
+    description: string;
+    category: string;
+    status: ProjectStatus;
+    stage: ProjectStage;
+    progress_percentage: number;
+    start_date: string;
+    target_completion_date: string;
+    last_updated: string;
+    owner: string;
+    architecture?: string;
+    tech_stack?: string[];
+    milestones: ClientShareMilestone[];
+    results: string[];
+  };
+  progress_history: ClientShareSnapshot[];
+  recent_updates: ClientShareUpdate[];
+}
+

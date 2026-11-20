@@ -240,20 +240,29 @@ export const PortfolioGrowthChart: React.FC<PortfolioGrowthChartProps> = ({
       {/* Mini Chart Footer Insights */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 mt-4 border-t border-slate-100 text-xs">
         <div>
-          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Monthly Value Delta</span>
-          <span className="text-emerald-700 font-semibold mono-num text-sm">+₹25.0L (↑ 56%)</span>
+          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Portfolio Valuation</span>
+          <span className="text-emerald-700 font-semibold mono-num text-sm">
+            {formatCurrency(currentTotalValuation, currency)}
+          </span>
         </div>
         <div>
-          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Progress Velocity</span>
-          <span className="text-slate-900 font-semibold mono-num text-sm">+10% / month avg</span>
+          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Average Progress</span>
+          <span className="text-slate-900 font-semibold mono-num text-sm">
+            {currentAvgProgress}% across {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+          </span>
         </div>
         <div>
-          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Active Milestones</span>
-          <span className="text-[#0A0A0A] font-semibold mono-num text-sm">14 Done / 8 In Flight</span>
+          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Milestones Status</span>
+          <span className="text-[#0A0A0A] font-semibold mono-num text-sm">
+            {projects.reduce((sum, p) => sum + p.milestones.filter((m) => m.completed).length, 0)} Done /{' '}
+            {projects.reduce((sum, p) => sum + p.milestones.filter((m) => !m.completed).length, 0)} Pending
+          </span>
         </div>
         <div>
-          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Snapshot Integrity</span>
-          <span className="text-slate-900 font-semibold mono-num text-sm">100% Verified Audit</span>
+          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Snapshot Records</span>
+          <span className="text-slate-900 font-semibold mono-num text-sm">
+            {snapshots.length} Verified {snapshots.length === 1 ? 'Entry' : 'Entries'}
+          </span>
         </div>
       </div>
     </div>

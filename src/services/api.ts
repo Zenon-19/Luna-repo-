@@ -90,14 +90,25 @@ export async function createProjectFromPrompt(
     return await res.json();
   } catch (err) {
     console.warn('API error in createProjectFromPrompt:', err);
+    const nameMatch = prompt.match(/(?:called|named)\s+([A-Za-z0-9\s\-&]+?)(?:\s+in\s+|\s+at\s+|\s+with\s+|\.|,|$)/i);
+    const percentMatch = prompt.match(/(\d{1,3})\s*%/);
+    let valueVal = 500000;
+    if (/(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|l\b)/i.test(prompt)) {
+      valueVal = parseFloat(prompt.match(/(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|l\b)/i)![1]) * 100000;
+    } else if (/(\d+(?:\.\d+)?)\s*(?:cr|crore|crores)/i.test(prompt)) {
+      valueVal = parseFloat(prompt.match(/(\d+(?:\.\d+)?)\s*(?:cr|crore|crores)/i)![1]) * 10000000;
+    } else if (/(\d+(?:\.\d+)?)\s*(?:k|thousand)/i.test(prompt)) {
+      valueVal = parseFloat(prompt.match(/(\d+(?:\.\d+)?)\s*(?:k|thousand)/i)![1]) * 1000;
+    }
     return {
-      name: prompt.slice(0, 24),
+      name: (nameMatch ? nameMatch[1].trim() : prompt.slice(0, 32).trim()) || 'New Project',
+      description: prompt,
       category: 'SaaS',
       stage: 'Development',
-      progress_percentage: 20,
-      project_value: 300000,
+      progress_percentage: percentMatch ? Math.min(100, parseInt(percentMatch[1], 10)) : 20,
+      project_value: valueVal,
       currency: '₹',
-      health_score: 80,
+      health_score: 85,
     };
   }
 }
