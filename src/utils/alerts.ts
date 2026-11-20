@@ -133,3 +133,12 @@ export function getStagnantProjects(
     }))
     .filter((item) => item.alert.isStagnant);
 }
+
+export {
+  monitorProjectBudget,
+  getBudgetWarningProjects,
+  getPortfolioBudgetSummary,
+  DEFAULT_BUDGET_WARNING_THRESHOLD,
+} from './budget';
+export type { BudgetMonitorResult, BudgetAlertSeverity } from './budget';
+

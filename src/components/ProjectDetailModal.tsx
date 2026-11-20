@@ -24,6 +24,7 @@ import {
 import { Project, ProjectSnapshot, ProjectUpdateRecord, Milestone } from '../types';
 import { formatCurrency, formatExactCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
 import { checkProjectStagnation } from '../utils/alerts';
+import { monitorProjectBudget } from '../utils/budget';
 
 interface ProjectDetailModalProps {
   project: Project;
@@ -61,6 +62,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const healthBadge = getHealthBadgeColor(project.health_score);
   const stageBadge = getStageColor(project.stage);
   const stagnation = checkProjectStagnation(project, snapshots);
+  const budget = monitorProjectBudget(project);
 
   const handleCreateMilestone = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +109,27 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   >
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                     <span>Stagnant &gt; 14d ({stagnation.stagnantDays}d)</span>
+                  </span>
+                )}
+                {budget.exceedsThreshold && (
+                  <span
+                    className={`text-xs border px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5 ${
+                      budget.isOverBudget
+                        ? 'bg-rose-50 text-rose-800 border-rose-200/90'
+                        : 'bg-amber-50 text-amber-800 border-amber-200/80'
+                    }`}
+                    title={budget.reason}
+                  >
+                    <AlertTriangle
+                      className={`w-3.5 h-3.5 ${
+                        budget.isOverBudget ? 'text-rose-600' : 'text-amber-600'
+                      }`}
+                    />
+                    <span>
+                      {budget.isOverBudget
+                        ? `Over Budget (${budget.utilizationPercentage}%)`
+                        : `Budget ${budget.utilizationPercentage}% (>80%)`}
+                    </span>
                   </span>
                 )}
               </div>
@@ -195,6 +218,75 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
+              {/* Proactive Budget Threshold Warning Banner */}
+              {budget.exceedsThreshold && (
+                <div
+                  className={`border rounded-2xl p-5 shadow-xs flex items-start gap-4 ${
+                    budget.isOverBudget
+                      ? 'bg-rose-50/70 border-rose-200/90'
+                      : 'bg-amber-50/70 border-amber-200/80'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 mt-0.5 ${
+                      budget.isOverBudget
+                        ? 'bg-rose-100 border-rose-200 text-rose-800'
+                        : 'bg-amber-100 border-amber-200 text-amber-800'
+                    }`}
+                  >
+                    <AlertTriangle
+                      className={`w-5 h-5 ${
+                        budget.isOverBudget ? 'text-rose-700' : 'text-amber-700'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+                      <h4
+                        className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                          budget.isOverBudget ? 'text-rose-900' : 'text-amber-900'
+                        }`}
+                      >
+                        <span>
+                          Budget Alert · {budget.utilizationPercentage}% of Project Budget Consumed
+                        </span>
+                      </h4>
+                      <span
+                        className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                          budget.isOverBudget
+                            ? 'bg-rose-100 text-rose-800 border-rose-200/60'
+                            : 'bg-amber-100 text-amber-800 border-amber-200/60'
+                        }`}
+                      >
+                        {budget.isOverBudget ? 'Over Budget (> 100%)' : 'Threshold Exceeded (> 80%)'}
+                      </span>
+                    </div>
+                    <p
+                      className={`text-xs leading-relaxed ${
+                        budget.isOverBudget ? 'text-rose-950/90' : 'text-amber-950/90'
+                      }`}
+                    >
+                      Expenditure to date (
+                      <strong className="font-semibold text-black mono-num">
+                        {formatExactCurrency(project.cost_to_date, currency)}
+                      </strong>
+                      ) has reached{' '}
+                      <strong className="font-semibold text-black mono-num">
+                        {budget.utilizationPercentage}%
+                      </strong>{' '}
+                      of total project value (
+                      <strong className="font-semibold text-black mono-num">
+                        {formatExactCurrency(project.project_value, currency)}
+                      </strong>
+                      ).{' '}
+                      {budget.isOverBudget
+                        ? `Current spend exceeds project budget by ${formatExactCurrency(Math.abs(budget.remainingBudget), currency)}.`
+                        : `Only ${formatExactCurrency(budget.remainingBudget, currency)} remains in the allocated budget.`}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Proactive Stagnation Alert Banner */}
               {stagnation.isStagnant && (
                 <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-5 shadow-xs flex items-start gap-4">
@@ -486,8 +578,102 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   <span className="text-[10px] text-slate-400 block uppercase font-semibold">
                     Calculated ROI
                   </span>
-                  <div className="text-xl font-bold text-black mono-num mt-1">
-                    +{roi}%
+                  <div
+                    className={`text-xl font-bold mono-num mt-1 ${
+                      roi < 0 ? 'text-rose-700' : 'text-black'
+                    }`}
+                  >
+                    {roi >= 0 ? `+${roi}%` : `${roi}%`}
+                  </div>
+                </div>
+              </div>
+
+              {/* Budget Monitor Card */}
+              <div
+                className={`p-5 rounded-2xl border shadow-xs ${
+                  budget.isOverBudget
+                    ? 'bg-rose-50/40 border-rose-200/90'
+                    : budget.exceedsThreshold
+                    ? 'bg-amber-50/40 border-amber-200/80'
+                    : 'bg-slate-50/60 border-slate-100'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                  <h5 className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                    {budget.exceedsThreshold && (
+                      <AlertTriangle
+                        className={`w-3.5 h-3.5 ${
+                          budget.isOverBudget ? 'text-rose-600' : 'text-amber-600'
+                        }`}
+                      />
+                    )}
+                    <span>Budget Utilization (Cost to Date vs Project Value)</span>
+                  </h5>
+                  <span
+                    className={`text-xs font-bold mono-num px-2.5 py-0.5 rounded-full border ${
+                      budget.isOverBudget
+                        ? 'bg-rose-100 text-rose-800 border-rose-200'
+                        : budget.exceedsThreshold
+                        ? 'bg-amber-100 text-amber-800 border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    }`}
+                  >
+                    {budget.utilizationPercentage}% Utilized · {budget.label}
+                  </span>
+                </div>
+
+                <div className="w-full bg-slate-200/80 rounded-full h-2.5 overflow-hidden relative mb-3">
+                  <div
+                    className={`h-2.5 rounded-full transition-all duration-500 ${
+                      budget.isOverBudget
+                        ? 'bg-rose-600'
+                        : budget.exceedsThreshold
+                        ? 'bg-amber-500'
+                        : 'bg-black'
+                    }`}
+                    style={{ width: `${Math.min(100, budget.utilizationPercentage)}%` }}
+                  />
+                  <div
+                    className="absolute top-0 bottom-0 w-0.5 bg-slate-500/70"
+                    style={{ left: '80%' }}
+                    title="80% Alert Threshold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-xs">
+                  <div className="bg-white/80 border border-slate-200/60 rounded-xl p-3">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">
+                      Cost to Date
+                    </span>
+                    <span className="font-semibold text-[#0A0A0A] mono-num">
+                      {formatExactCurrency(project.cost_to_date, currency)}
+                    </span>
+                  </div>
+                  <div className="bg-white/80 border border-slate-200/60 rounded-xl p-3">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">
+                      Budget (Project Value)
+                    </span>
+                    <span className="font-semibold text-[#0A0A0A] mono-num">
+                      {formatExactCurrency(project.project_value, currency)}
+                    </span>
+                  </div>
+                  <div className="bg-white/80 border border-slate-200/60 rounded-xl p-3">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block mb-0.5">
+                      {budget.remainingBudget >= 0 ? 'Remaining Budget' : 'Budget Overrun'}
+                    </span>
+                    <span
+                      className={`font-semibold mono-num ${
+                        budget.isOverBudget
+                          ? 'text-rose-700'
+                          : budget.exceedsThreshold
+                          ? 'text-amber-700'
+                          : 'text-emerald-700'
+                      }`}
+                    >
+                      {budget.remainingBudget >= 0
+                        ? formatExactCurrency(budget.remainingBudget, currency)
+                        : `-${formatExactCurrency(Math.abs(budget.remainingBudget), currency)}`}
+                    </span>
                   </div>
                 </div>
               </div>

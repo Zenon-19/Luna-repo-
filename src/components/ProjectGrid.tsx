@@ -16,6 +16,7 @@ import { Project, ProjectSnapshot, ProjectSortOption } from '../types';
 import { ProjectCard } from './ProjectCard';
 import { formatCurrency, getHealthBadgeColor, getStageColor } from '../utils/formatters';
 import { checkProjectStagnation } from '../utils/alerts';
+import { monitorProjectBudget } from '../utils/budget';
 import { HighlightedText } from './HighlightedText';
 
 interface ProjectGridProps {
@@ -116,6 +117,7 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                     {sortBy === 'value_asc' && <ArrowUp className="w-3 h-3 text-black" />}
                   </div>
                 </th>
+                <th className="py-4 px-6">Cost / Budget</th>
                 <th className="py-4 px-6">Performance</th>
                 <th 
                   className={`py-4 px-6 ${onSortChange ? 'cursor-pointer hover:text-black transition-colors select-none' : ''}`}
@@ -139,14 +141,21 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
               {projects.map((p) => {
                 const health = getHealthBadgeColor(p.health_score);
                 const stagnation = checkProjectStagnation(p, snapshots);
+                const budget = monitorProjectBudget(p);
                 return (
                   <tr
                     key={p.id}
                     onClick={() => onSelectProject(p)}
-                    className="hover:bg-slate-50/60 cursor-pointer transition-colors"
+                    className={`hover:bg-slate-50/60 cursor-pointer transition-colors ${
+                      budget.isOverBudget
+                        ? 'bg-rose-50/20'
+                        : budget.exceedsThreshold
+                        ? 'bg-amber-50/15'
+                        : ''
+                    }`}
                   >
                     <td className="py-4 px-6 font-semibold text-[#0A0A0A]">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <div
                           className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: p.color || '#000000' }}
@@ -161,6 +170,27 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                             <span>Stagnant ({stagnation.stagnantDays}d)</span>
+                          </span>
+                        )}
+                        {budget.exceedsThreshold && (
+                          <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold ${
+                              budget.isOverBudget
+                                ? 'bg-rose-50 border-rose-200/90 text-rose-800'
+                                : 'bg-amber-50 border-amber-200/80 text-amber-800'
+                            }`}
+                            title={budget.reason}
+                          >
+                            <AlertTriangle
+                              className={`w-2.5 h-2.5 ${
+                                budget.isOverBudget ? 'text-rose-600' : 'text-amber-600'
+                              }`}
+                            />
+                            <span>
+                              {budget.isOverBudget
+                                ? `Over Budget (${budget.utilizationPercentage}%)`
+                                : `Budget ${budget.utilizationPercentage}%`}
+                            </span>
                           </span>
                         )}
                       </div>
@@ -198,6 +228,42 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                     </td>
                     <td className="py-4 px-6 mono-num font-semibold text-sm text-[#0A0A0A]">
                       {formatCurrency(p.project_value, currency)}
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex flex-col gap-1 min-w-[110px]" title={budget.reason}>
+                        <div className="flex items-center justify-between gap-2 text-xs mono-num">
+                          <span className="text-slate-700 font-medium">
+                            {formatCurrency(p.cost_to_date, currency)}
+                          </span>
+                          <span
+                            className={`font-bold ${
+                              budget.isOverBudget
+                                ? 'text-rose-700'
+                                : budget.exceedsThreshold
+                                ? 'text-amber-700'
+                                : 'text-slate-500'
+                            }`}
+                          >
+                            {budget.utilizationPercentage}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden relative">
+                          <div
+                            className={`h-1.5 rounded-full ${
+                              budget.isOverBudget
+                                ? 'bg-rose-600'
+                                : budget.exceedsThreshold
+                                ? 'bg-amber-500'
+                                : 'bg-slate-600'
+                            }`}
+                            style={{ width: `${Math.min(100, budget.utilizationPercentage)}%` }}
+                          />
+                          <div
+                            className="absolute top-0 bottom-0 w-px bg-slate-400/70"
+                            style={{ left: '80%' }}
+                          />
+                        </div>
+                      </div>
                     </td>
                     <td className="py-4 px-6">
                       {stagnation.isStagnant ? (
@@ -241,11 +307,16 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
     <div className="space-y-5 mb-10">
       {projects.map((project) => {
         const stagnation = checkProjectStagnation(project, snapshots);
+        const budget = monitorProjectBudget(project);
         return (
           <div
             key={project.id}
             className={`bg-white border rounded-2xl p-6 transition-colors shadow-sm ${
-              stagnation.isStagnant ? 'border-amber-200/90' : 'border-slate-100 hover:border-black'
+              budget.isOverBudget
+                ? 'border-rose-200/90 hover:border-rose-400'
+                : budget.exceedsThreshold || stagnation.isStagnant
+                ? 'border-amber-200/90 hover:border-amber-400'
+                : 'border-slate-100 hover:border-black'
             }`}
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-100">
@@ -263,6 +334,9 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                 <span className="text-xs px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-semibold mono-num">
                   {project.progress_percentage}%
                 </span>
+                <span className="text-xs px-2.5 py-0.5 rounded-lg bg-slate-50 border border-slate-100 text-slate-600 font-medium mono-num">
+                  Cost: {formatCurrency(project.cost_to_date, currency)} / {formatCurrency(project.project_value, currency)}
+                </span>
                 {stagnation.isStagnant && (
                   <span
                     className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-amber-50 border border-amber-200/80 text-amber-800 text-[10px] font-semibold"
@@ -270,6 +344,27 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                   >
                     <AlertTriangle className="w-3 h-3 text-amber-600" />
                     <span>Stagnant &gt; 14d ({stagnation.stagnantDays}d)</span>
+                  </span>
+                )}
+                {budget.exceedsThreshold && (
+                  <span
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg border text-[10px] font-semibold ${
+                      budget.isOverBudget
+                        ? 'bg-rose-50 border-rose-200/90 text-rose-800'
+                        : 'bg-amber-50 border-amber-200/80 text-amber-800'
+                    }`}
+                    title={budget.reason}
+                  >
+                    <AlertTriangle
+                      className={`w-3 h-3 ${
+                        budget.isOverBudget ? 'text-rose-600' : 'text-amber-600'
+                      }`}
+                    />
+                    <span>
+                      {budget.isOverBudget
+                        ? `Over Budget (${budget.utilizationPercentage}%)`
+                        : `Budget ${budget.utilizationPercentage}% (>80%)`}
+                    </span>
                   </span>
                 )}
               </div>

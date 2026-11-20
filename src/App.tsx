@@ -30,8 +30,9 @@ import {
 } from './types';
 import { generatePortfolioInsights } from './services/api';
 import { checkProjectStagnation } from './utils/alerts';
+import { monitorProjectBudget } from './utils/budget';
 
-const DATA_VERSION = 'v5_crm_erp_ai_agents';
+const DATA_VERSION = 'v6_budget_monitor';
 
 export default function App() {
   // Local state with localStorage hydration & automatic migration to all completed projects (2026)
@@ -158,6 +159,10 @@ export default function App() {
       if (selectedStatus !== 'all') {
         if (selectedStatus === 'stagnant') {
           if (!checkProjectStagnation(p, snapshots).isStagnant) {
+            return false;
+          }
+        } else if (selectedStatus === 'budget_warning') {
+          if (!monitorProjectBudget(p).exceedsThreshold) {
             return false;
           }
         } else if (p.status !== selectedStatus) {

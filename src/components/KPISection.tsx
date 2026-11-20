@@ -15,6 +15,7 @@ import {
 import { Project, ProjectSnapshot } from '../types';
 import { formatCurrency, getHealthBadgeColor } from '../utils/formatters';
 import { getStagnantProjects } from '../utils/alerts';
+import { getBudgetWarningProjects } from '../utils/budget';
 
 interface KPISectionProps {
   projects: Project[];
@@ -32,6 +33,7 @@ export const KPISection: React.FC<KPISectionProps> = ({
   selectedStatus,
 }) => {
   const stagnantItems = getStagnantProjects(projects, snapshots);
+  const budgetWarningItems = getBudgetWarningProjects(projects);
   const total = projects.length;
   const active = projects.filter((p) => p.status === 'active').length;
   const completed = projects.filter((p) => p.status === 'completed').length;
@@ -133,8 +135,22 @@ export const KPISection: React.FC<KPISectionProps> = ({
               }`}
               title="Show projects with progress stagnant for > 14 days"
             >
-              <AlertTriangle className="w-3 h-3 inline mr-1 text-amber-600" />
+              <AlertTriangle className={`w-3 h-3 inline mr-1 ${selectedStatus === 'stagnant' ? 'text-white' : 'text-amber-600'}`} />
               {stagnantItems.length} Stagnant
+            </button>
+          )}
+          {budgetWarningItems.length > 0 && (
+            <button
+              onClick={() => onFilterStatus('budget_warning')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                selectedStatus === 'budget_warning'
+                  ? 'bg-rose-600 text-white font-semibold'
+                  : 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200/80'
+              }`}
+              title="Show projects where cost_to_date exceeds 80% of project_value"
+            >
+              <AlertTriangle className={`w-3 h-3 inline mr-1 ${selectedStatus === 'budget_warning' ? 'text-white' : 'text-rose-600'}`} />
+              {budgetWarningItems.length} &gt;80% Budget
             </button>
           )}
         </div>
@@ -221,6 +237,11 @@ export const KPISection: React.FC<KPISectionProps> = ({
             <span className="text-amber-800 font-medium flex items-center gap-1">
               <AlertTriangle className="w-3 h-3 text-amber-600" />
               {stagnantItems.length} Stagnation alert{stagnantItems.length > 1 ? 's' : ''}
+            </span>
+          ) : budgetWarningItems.length > 0 ? (
+            <span className="text-rose-700 font-medium flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3 text-rose-600" />
+              {budgetWarningItems.length} Budget alert{budgetWarningItems.length > 1 ? 's' : ''}
             </span>
           ) : (
             <span className="text-slate-400 font-medium">0 Critical risks</span>

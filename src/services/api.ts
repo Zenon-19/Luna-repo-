@@ -135,13 +135,24 @@ function fallbackLocalParser(message: string, projects: Project[]): AIParseResul
       updated_fields.progress_percentage = progressVal;
     }
     if (valueVal !== undefined) {
-      changes.push({
-        field_name: 'project_value',
-        label: 'Project Value',
-        old_value: `${matchedProject.currency}${matchedProject.project_value.toLocaleString()}`,
-        new_value: `${matchedProject.currency}${valueVal.toLocaleString()}`,
-      });
-      updated_fields.project_value = valueVal;
+      const isCostUpdate = /\b(cost|spend|spent|expense|budget used)\b/i.test(message);
+      if (isCostUpdate) {
+        changes.push({
+          field_name: 'cost_to_date',
+          label: 'Cost to Date',
+          old_value: `${matchedProject.currency}${matchedProject.cost_to_date.toLocaleString()}`,
+          new_value: `${matchedProject.currency}${valueVal.toLocaleString()}`,
+        });
+        updated_fields.cost_to_date = valueVal;
+      } else {
+        changes.push({
+          field_name: 'project_value',
+          label: 'Project Value',
+          old_value: `${matchedProject.currency}${matchedProject.project_value.toLocaleString()}`,
+          new_value: `${matchedProject.currency}${valueVal.toLocaleString()}`,
+        });
+        updated_fields.project_value = valueVal;
+      }
     }
   }
 

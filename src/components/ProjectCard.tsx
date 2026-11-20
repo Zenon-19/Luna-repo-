@@ -16,6 +16,7 @@ import {
 import { Project, ProjectSnapshot } from '../types';
 import { formatCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
 import { checkProjectStagnation } from '../utils/alerts';
+import { monitorProjectBudget } from '../utils/budget';
 import { HighlightedText } from './HighlightedText';
 
 interface ProjectCardProps {
@@ -39,12 +40,18 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   const stageBadge = getStageColor(project.stage);
   const stagnation = checkProjectStagnation(project, snapshots);
   const isStagnant = stagnation.isStagnant;
+  const budget = monitorProjectBudget(project);
+  const isBudgetWarning = budget.exceedsThreshold;
 
   return (
     <div
       onClick={onClick}
       className={`group relative bg-white border rounded-2xl p-6 hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between shadow-xs ${
-        isStagnant ? 'border-amber-200/90 hover:border-amber-400 bg-amber-50/15' : 'border-slate-100 hover:border-black'
+        budget.isOverBudget
+          ? 'border-rose-200/90 hover:border-rose-400 bg-rose-50/15'
+          : isBudgetWarning || isStagnant
+          ? 'border-amber-200/90 hover:border-amber-400 bg-amber-50/15'
+          : 'border-slate-100 hover:border-black'
       }`}
     >
       {/* Top Bar: Identity & Health */}
@@ -80,6 +87,27 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
                     <span>Stagnant ({stagnation.stagnantDays}d)</span>
+                  </span>
+                )}
+                {isBudgetWarning && (
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold tracking-tight ${
+                      budget.isOverBudget
+                        ? 'bg-rose-50 border-rose-200/90 text-rose-800'
+                        : 'bg-amber-50 border-amber-200/80 text-amber-800'
+                    }`}
+                    title={budget.reason}
+                  >
+                    <AlertTriangle
+                      className={`w-2.5 h-2.5 ${
+                        budget.isOverBudget ? 'text-rose-600' : 'text-amber-600'
+                      }`}
+                    />
+                    <span>
+                      {budget.isOverBudget
+                        ? `Over Budget (${budget.utilizationPercentage}%)`
+                        : `Budget ${budget.utilizationPercentage}%`}
+                    </span>
                   </span>
                 )}
               </div>
@@ -207,6 +235,92 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               {project.performance_trend}
             </span>
           </div>
+        </div>
+
+        {/* Cost vs Budget Monitor */}
+        <div
+          className={`mb-5 px-4 py-3 rounded-xl border ${
+            budget.isOverBudget
+              ? 'bg-rose-50/40 border-rose-200/80'
+              : isBudgetWarning
+              ? 'bg-amber-50/40 border-amber-200/80'
+              : 'bg-slate-50/70 border-slate-100'
+          }`}
+          title={budget.reason}
+        >
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <span className="text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+              {isBudgetWarning && (
+                <AlertTriangle
+                  className={`w-3 h-3 ${
+                    budget.isOverBudget ? 'text-rose-600' : 'text-amber-600'
+                  }`}
+                />
+              )}
+              <span
+                className={
+                  budget.isOverBudget
+                    ? 'text-rose-700'
+                    : isBudgetWarning
+                    ? 'text-amber-800'
+                    : 'text-slate-400'
+                }
+              >
+                Cost vs Budget
+              </span>
+            </span>
+            <div className="flex items-center gap-1.5 text-[11px] mono-num">
+              <span className="text-slate-600 font-medium">
+                {formatCurrency(project.cost_to_date, currency)} / {formatCurrency(project.project_value, currency)}
+              </span>
+              <span
+                className={`font-bold ${
+                  budget.isOverBudget
+                    ? 'text-rose-700'
+                    : isBudgetWarning
+                    ? 'text-amber-700'
+                    : 'text-slate-700'
+                }`}
+              >
+                ({budget.utilizationPercentage}%)
+              </span>
+            </div>
+          </div>
+          <div className="w-full bg-slate-200/80 rounded-full h-1.5 overflow-hidden relative">
+            <div
+              className={`h-1.5 rounded-full transition-all duration-500 ${
+                budget.isOverBudget
+                  ? 'bg-rose-600'
+                  : isBudgetWarning
+                  ? 'bg-amber-500'
+                  : 'bg-slate-700'
+              }`}
+              style={{ width: `${Math.min(100, budget.utilizationPercentage)}%` }}
+            />
+            <div
+              className="absolute top-0 bottom-0 w-px bg-slate-400/70"
+              style={{ left: '80%' }}
+              title="80% budget threshold"
+            />
+          </div>
+          {isBudgetWarning && (
+            <div
+              className={`mt-1.5 text-[10px] font-semibold flex items-center justify-between ${
+                budget.isOverBudget ? 'text-rose-700' : 'text-amber-800'
+              }`}
+            >
+              <span>
+                {budget.isOverBudget
+                  ? `Over budget by ${formatCurrency(Math.abs(budget.remainingBudget), currency)}`
+                  : 'Exceeds 80% budget threshold'}
+              </span>
+              <span className="mono-num">
+                {budget.remainingBudget >= 0
+                  ? `${formatCurrency(budget.remainingBudget, currency)} left`
+                  : `-${formatCurrency(Math.abs(budget.remainingBudget), currency)}`}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
