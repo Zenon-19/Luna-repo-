@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import {
   ClientSharePayload,
+  MilestoneComment,
   Project,
   ProjectSnapshot,
   ProjectUpdateRecord,
@@ -20,6 +21,7 @@ import {
   buildClientShareUrl,
   generateClientMarkdownSummary,
 } from '../utils/clientShare';
+import { fetchMilestoneComments } from '../services/api';
 import { ClientProgressView } from './ClientProgressView';
 
 interface ShareProjectModalProps {
@@ -41,6 +43,7 @@ export const ShareProjectModal: React.FC<ShareProjectModalProps> = ({
   const [includeArchitecture, setIncludeArchitecture] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [milestoneComments, setMilestoneComments] = useState<MilestoneComment[]>([]);
 
   useEffect(() => {
     if (project) {
@@ -48,6 +51,9 @@ export const ShareProjectModal: React.FC<ShareProjectModalProps> = ({
       setIncludeArchitecture(Boolean(project.architecture || project.tech_stack?.length));
       setCopiedLink(false);
       setCopiedSummary(false);
+      fetchMilestoneComments(project.id).then(setMilestoneComments);
+    } else {
+      setMilestoneComments([]);
     }
   }, [project?.id]);
 
@@ -78,7 +84,7 @@ export const ShareProjectModal: React.FC<ShareProjectModalProps> = ({
 
   const handleCopySummary = async () => {
     try {
-      const md = generateClientMarkdownSummary(payload);
+      const md = generateClientMarkdownSummary(payload, milestoneComments);
       await navigator.clipboard.writeText(md);
       setCopiedSummary(true);
       setTimeout(() => setCopiedSummary(false), 2000);
@@ -101,7 +107,7 @@ export const ShareProjectModal: React.FC<ShareProjectModalProps> = ({
                 Share Progress with Client · {project.name}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Read-only client portal showing progress, milestones, timeline, and results
+                Client portal showing progress, milestones, timeline, results, and milestone feedback
               </p>
             </div>
           </div>
@@ -122,7 +128,7 @@ export const ShareProjectModal: React.FC<ShareProjectModalProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="flex-1 min-w-0">
                 <label className="text-xs font-semibold text-slate-700 block mb-1.5">
-                  Shareable Read-Only Client Link
+                  Shareable Client Portal Link
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -230,7 +236,7 @@ export const ShareProjectModal: React.FC<ShareProjectModalProps> = ({
                 <span>Live Client Portal Preview</span>
               </div>
               <span className="text-[11px] text-slate-400">
-                Read-only view · Costs &amp; internal metrics excluded
+                Milestone comments enabled · Costs &amp; internal metrics excluded
               </span>
             </div>
 

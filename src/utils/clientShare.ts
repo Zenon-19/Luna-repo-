@@ -1,5 +1,6 @@
 import {
   ClientSharePayload,
+  MilestoneComment,
   Project,
   ProjectSnapshot,
   ProjectUpdateRecord,
@@ -8,6 +9,21 @@ import {
 export interface ClientShareOptions {
   clientNote?: string;
   includeArchitecture?: boolean;
+}
+
+/**
+ * Returns a safe, URL/storage-friendly identifier for a shared project payload.
+ */
+export function getClientShareProjectKey(payload: ClientSharePayload): string {
+  if (payload.project.id && /^[a-zA-Z0-9_-]+$/.test(payload.project.id)) {
+    return payload.project.id;
+  }
+  const raw = `${payload.project.name}_${payload.project.start_date || 'share'}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+  return `share_${raw || 'project'}`;
 }
 
 /**
@@ -47,6 +63,7 @@ export function buildClientSharePayload(
     shared_at: new Date().toISOString(),
     ...(clientNote?.trim() ? { client_note: clientNote.trim() } : {}),
     project: {
+      id: project.id,
       name: project.name,
       description: project.description,
       category: project.category,
@@ -67,6 +84,7 @@ export function buildClientSharePayload(
         target_date: m.target_date,
         completed: m.completed,
         ...(m.completed_at ? { completed_at: m.completed_at } : {}),
+        ...(m.comments && m.comments.length > 0 ? { comments: m.comments } : {}),
       })),
       results: [...(project.business_signals || [])],
     },
@@ -136,7 +154,10 @@ export function buildClientShareUrl(payload: ClientSharePayload): string {
 /**
  * Generates a client-safe Markdown progress report (strictly excluding costs/budgets).
  */
-export function generateClientMarkdownSummary(payload: ClientSharePayload): string {
+export function generateClientMarkdownSummary(
+  payload: ClientSharePayload,
+  externalComments: MilestoneComment[] = []
+): string {
   const { project, client_note, recent_updates } = payload;
   const completedCount = project.milestones.filter((m) => m.completed).length;
 
@@ -169,6 +190,21 @@ export function generateClientMarkdownSummary(payload: ClientSharePayload): stri
         ? `Completed ${m.completed_at}`
         : `Target ${m.target_date}`;
       md += `- ${statusMark} **${m.title}** (${dateMeta})\n`;
+
+      const combinedMap = new Map<string, MilestoneComment>();
+      (m.comments || []).forEach((c) => combinedMap.set(c.id, c));
+      externalComments
+        .filter((c) => c.milestone_id === m.id)
+        .forEach((c) => combinedMap.set(c.id, c));
+
+      const milestoneComments = Array.from(combinedMap.values()).sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      milestoneComments.forEach((c) => {
+        const tag = c.feedback_type === 'approved' ? 'Approved' : c.feedback_type === 'question' ? 'Question' : 'Feedback';
+        const dateStr = c.created_at.split('T')[0];
+        md += `  - [${tag}] **${c.author_name}** (${dateStr}): ${c.message.replace(/\s+/g, ' ')}\n`;
+      });
     });
   }
 

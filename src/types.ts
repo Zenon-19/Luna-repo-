@@ -36,6 +36,19 @@ export type ProjectSortOption =
   | 'date_asc'
   | 'date_desc';
 
+export type MilestoneFeedbackType = 'feedback' | 'approved' | 'question';
+
+export interface MilestoneComment {
+  id: string;
+  project_id: string;
+  milestone_id: string;
+  author_name: string;
+  author_role: 'client' | 'owner';
+  feedback_type: MilestoneFeedbackType;
+  message: string;
+  created_at: string;
+}
+
 export interface Milestone {
   id: string;
   title: string;
@@ -43,6 +56,7 @@ export interface Milestone {
   target_date: string;
   completed: boolean;
   completed_at?: string;
+  comments?: MilestoneComment[];
 }
 
 export interface ProjectSnapshot {
@@ -165,6 +179,7 @@ export interface ClientShareMilestone {
   target_date: string;
   completed: boolean;
   completed_at?: string;
+  comments?: MilestoneComment[];
 }
 
 export interface ClientShareSnapshot {
@@ -183,6 +198,7 @@ export interface ClientSharePayload {
   shared_at: string;
   client_note?: string;
   project: {
+    id?: string;
     name: string;
     description: string;
     category: string;

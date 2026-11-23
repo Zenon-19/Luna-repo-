@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   Sparkles,
@@ -20,12 +20,18 @@ import {
   GitBranch,
   User,
   AlertTriangle,
-  Share2
+  Share2,
+  Send
 } from 'lucide-react';
-import { Project, ProjectSnapshot, ProjectUpdateRecord, Milestone } from '../types';
+import { Project, ProjectSnapshot, ProjectUpdateRecord, Milestone, MilestoneComment } from '../types';
 import { formatCurrency, formatExactCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
 import { checkProjectStagnation } from '../utils/alerts';
 import { monitorProjectBudget } from '../utils/budget';
+import {
+  fetchMilestoneComments,
+  createMilestoneComment,
+  mergeMilestoneComments,
+} from '../services/api';
 
 interface ProjectDetailModalProps {
   project: Project;
@@ -58,6 +64,60 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
   const [newMilestoneDate, setNewMilestoneDate] = useState('');
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
+  const [remoteComments, setRemoteComments] = useState<MilestoneComment[]>([]);
+  const [replyingMilestoneId, setReplyingMilestoneId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [isSendingReply, setIsSendingReply] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetchMilestoneComments(project.id).then((loaded) => {
+      if (active) setRemoteComments(loaded);
+    });
+    return () => {
+      active = false;
+    };
+  }, [project.id]);
+
+  const allMilestoneComments = useMemo(
+    () =>
+      mergeMilestoneComments(
+        project.milestones.flatMap((m) => m.comments || []),
+        remoteComments
+      ),
+    [project.milestones, remoteComments]
+  );
+
+  const commentsByMilestone = useMemo(() => {
+    const grouped: Record<string, MilestoneComment[]> = {};
+    allMilestoneComments.forEach((c) => {
+      if (!grouped[c.milestone_id]) grouped[c.milestone_id] = [];
+      grouped[c.milestone_id].push(c);
+    });
+    return grouped;
+  }, [allMilestoneComments]);
+
+  const handleOwnerReply = async (e: React.FormEvent, milestoneId: string) => {
+    e.preventDefault();
+    const trimmed = replyText.trim();
+    if (!trimmed) return;
+    setIsSendingReply(true);
+    try {
+      const saved = await createMilestoneComment({
+        projectId: project.id,
+        milestoneId,
+        authorName: project.owner || 'Owner',
+        authorRole: 'owner',
+        feedbackType: 'feedback',
+        message: trimmed,
+      });
+      setRemoteComments((prev) => mergeMilestoneComments(prev, [saved]));
+      setReplyText('');
+      setReplyingMilestoneId(null);
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
 
   const projectSnapshots = snapshots.filter((s) => s.project_id === project.id);
   const projectAuditRecords = updateRecords.filter((r) => r.project_id === project.id);
@@ -215,6 +275,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             }`}
           >
             Milestones ({project.milestones.filter((m) => m.completed).length}/{project.milestones.length})
+            {allMilestoneComments.length > 0 ? ` · ${allMilestoneComments.length} Notes` : ''}
           </button>
           <button
             onClick={() => setActiveTab('audit')}
@@ -784,38 +845,121 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 </form>
               )}
 
-              <div className="space-y-2">
-                {project.milestones.map((m) => (
-                  <div
-                    key={m.id}
-                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
-                      m.completed
-                        ? 'bg-emerald-50/60 border-emerald-200 text-slate-800'
-                        : 'bg-white border-slate-100 text-[#0A0A0A] shadow-xs'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => onUpdateMilestone(project.id, m.id, !m.completed)}
-                        className="text-slate-400 hover:text-black transition-colors cursor-pointer"
-                      >
-                        {m.completed ? (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        ) : (
-                          <Circle className="w-5 h-5" />
-                        )}
-                      </button>
-                      <div>
-                        <span className={`text-xs ${m.completed ? 'line-through text-slate-400' : 'font-medium'}`}>
-                          {m.title}
-                        </span>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
-                          Target: {m.target_date} {m.completed_at && `• Completed on ${m.completed_at}`}
+              <div className="space-y-2.5">
+                {project.milestones.map((m) => {
+                  const mComments = commentsByMilestone[m.id] || [];
+                  const isReplying = replyingMilestoneId === m.id;
+                  return (
+                    <div
+                      key={m.id}
+                      className={`p-3.5 rounded-2xl border transition-all ${
+                        m.completed
+                          ? 'bg-emerald-50/60 border-emerald-200 text-slate-800'
+                          : 'bg-white border-slate-100 text-[#0A0A0A] shadow-xs'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <button
+                            onClick={() => onUpdateMilestone(project.id, m.id, !m.completed)}
+                            className="text-slate-400 hover:text-black transition-colors cursor-pointer shrink-0"
+                          >
+                            {m.completed ? (
+                              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                            ) : (
+                              <Circle className="w-5 h-5" />
+                            )}
+                          </button>
+                          <div className="min-w-0">
+                            <span className={`text-xs ${m.completed ? 'line-through text-slate-400' : 'font-medium'}`}>
+                              {m.title}
+                            </span>
+                            <div className="text-[10px] text-slate-400 mt-0.5">
+                              Target: {m.target_date} {m.completed_at && `• Completed on ${m.completed_at}`}
+                            </div>
+                          </div>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReplyingMilestoneId(isReplying ? null : m.id);
+                            setReplyText('');
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-black text-[11px] font-medium text-slate-600 hover:text-black transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                        >
+                          <MessageSquare className="w-3 h-3" />
+                          <span>{mComments.length > 0 ? `${mComments.length} · Reply` : 'Add Note'}</span>
+                        </button>
                       </div>
+
+                      {mComments.length > 0 && (
+                        <div className="mt-3 ml-8 space-y-2 border-l-2 border-slate-200/70 pl-3">
+                          {mComments.map((c) => (
+                            <div
+                              key={c.id}
+                              className="bg-white border border-slate-200/70 rounded-xl px-3 py-2 text-xs"
+                            >
+                              <div className="flex items-center justify-between gap-2 text-[11px] mb-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-semibold text-[#0A0A0A]">{c.author_name}</span>
+                                  <span className="text-slate-300" aria-hidden="true">·</span>
+                                  <span className="text-slate-500">
+                                    {c.author_role === 'client' ? 'Client' : 'Team'}
+                                  </span>
+                                  <span className="text-slate-300" aria-hidden="true">·</span>
+                                  <span
+                                    className={`font-medium ${
+                                      c.feedback_type === 'approved'
+                                        ? 'text-emerald-700'
+                                        : c.feedback_type === 'question'
+                                        ? 'text-amber-700'
+                                        : 'text-slate-500'
+                                    }`}
+                                  >
+                                    {c.feedback_type === 'approved'
+                                      ? 'Approved'
+                                      : c.feedback_type === 'question'
+                                      ? 'Question'
+                                      : 'Feedback'}
+                                  </span>
+                                </div>
+                                <span className="text-slate-400 mono-num">
+                                  {c.created_at.split('T')[0]}
+                                </span>
+                              </div>
+                              <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{c.message}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {isReplying && (
+                        <form
+                          onSubmit={(e) => handleOwnerReply(e, m.id)}
+                          className="mt-3 ml-8 flex flex-col sm:flex-row gap-2"
+                        >
+                          <input
+                            type="text"
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            maxLength={1500}
+                            placeholder={`Reply as ${project.owner || 'Owner'} on "${m.title}"...`}
+                            className="flex-1 bg-white border border-slate-200 text-xs text-slate-900 px-3 py-2 rounded-xl focus:outline-none focus:border-black"
+                          />
+                          <button
+                            type="submit"
+                            disabled={isSendingReply || !replyText.trim()}
+                            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-black hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                          >
+                            <Send className="w-3 h-3" />
+                            <span>{isSendingReply ? 'Sending...' : 'Reply'}</span>
+                          </button>
+                        </form>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

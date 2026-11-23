@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   CheckCircle2,
   Circle,
@@ -9,6 +9,10 @@ import {
   TrendingUp,
   Layers,
   Clock,
+  MessageSquare,
+  Send,
+  ThumbsUp,
+  HelpCircle,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -19,8 +23,20 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
-import { ClientSharePayload } from '../types';
-import { generateClientMarkdownSummary } from '../utils/clientShare';
+import {
+  ClientSharePayload,
+  MilestoneComment,
+  MilestoneFeedbackType,
+} from '../types';
+import {
+  generateClientMarkdownSummary,
+  getClientShareProjectKey,
+} from '../utils/clientShare';
+import {
+  fetchMilestoneComments,
+  createMilestoneComment,
+  mergeMilestoneComments,
+} from '../services/api';
 
 interface ClientProgressViewProps {
   payload: ClientSharePayload;
@@ -29,6 +45,8 @@ interface ClientProgressViewProps {
   onExitPreview?: () => void;
 }
 
+const CLIENT_AUTHOR_STORAGE_KEY = 'luna_client_author_name_v1';
+
 export const ClientProgressView: React.FC<ClientProgressViewProps> = ({
   payload,
   embedded = false,
@@ -36,8 +54,55 @@ export const ClientProgressView: React.FC<ClientProgressViewProps> = ({
   onExitPreview,
 }) => {
   const [copiedSummary, setCopiedSummary] = useState(false);
+  const [remoteComments, setRemoteComments] = useState<MilestoneComment[]>([]);
+  const [activeComposerMilestoneId, setActiveComposerMilestoneId] = useState<string | null>(null);
+  const [authorName, setAuthorName] = useState<string>(() => {
+    try {
+      return localStorage.getItem(CLIENT_AUTHOR_STORAGE_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
+  const [feedbackType, setFeedbackType] = useState<MilestoneFeedbackType>('feedback');
+  const [commentText, setCommentText] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [justPostedMilestoneId, setJustPostedMilestoneId] = useState<string | null>(null);
 
   const { project, progress_history, recent_updates, client_note, shared_at } = payload;
+  const projectKey = useMemo(() => getClientShareProjectKey(payload), [payload]);
+
+  useEffect(() => {
+    let active = true;
+    fetchMilestoneComments(projectKey).then((loaded) => {
+      if (active) {
+        setRemoteComments(loaded);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [projectKey]);
+
+  const embeddedPayloadComments = useMemo(
+    () => project.milestones.flatMap((m) => m.comments || []),
+    [project.milestones]
+  );
+
+  const allComments = useMemo(
+    () => mergeMilestoneComments(embeddedPayloadComments, remoteComments),
+    [embeddedPayloadComments, remoteComments]
+  );
+
+  const commentsByMilestone = useMemo(() => {
+    const grouped: Record<string, MilestoneComment[]> = {};
+    allComments.forEach((c) => {
+      if (!grouped[c.milestone_id]) grouped[c.milestone_id] = [];
+      grouped[c.milestone_id].push(c);
+    });
+    return grouped;
+  }, [allComments]);
+
   const completedMilestones = project.milestones.filter((m) => m.completed).length;
   const totalMilestones = project.milestones.length;
 
@@ -52,13 +117,90 @@ export const ClientProgressView: React.FC<ClientProgressViewProps> = ({
 
   const handleCopySummary = async () => {
     try {
-      const md = generateClientMarkdownSummary(payload);
+      const md = generateClientMarkdownSummary(payload, allComments);
       await navigator.clipboard.writeText(md);
       setCopiedSummary(true);
       setTimeout(() => setCopiedSummary(false), 2000);
     } catch (err) {
       console.error('Failed to copy summary:', err);
     }
+  };
+
+  const handleOpenComposer = (milestoneId: string) => {
+    if (activeComposerMilestoneId === milestoneId) {
+      setActiveComposerMilestoneId(null);
+      setCommentError(null);
+      return;
+    }
+    setActiveComposerMilestoneId(milestoneId);
+    setCommentText('');
+    setFeedbackType('feedback');
+    setCommentError(null);
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent, milestoneId: string) => {
+    e.preventDefault();
+    const trimmedAuthor = authorName.trim();
+    const trimmedMessage = commentText.trim();
+
+    if (!trimmedAuthor) {
+      setCommentError('Please enter your name so the team knows who left this note.');
+      return;
+    }
+    if (!trimmedMessage) {
+      setCommentError('Please write a comment or feedback note before posting.');
+      return;
+    }
+
+    setIsSubmittingComment(true);
+    setCommentError(null);
+    try {
+      try {
+        localStorage.setItem(CLIENT_AUTHOR_STORAGE_KEY, trimmedAuthor);
+      } catch {
+        // Ignore storage errors
+      }
+
+      const saved = await createMilestoneComment({
+        projectId: projectKey,
+        milestoneId,
+        authorName: trimmedAuthor,
+        authorRole: 'client',
+        feedbackType,
+        message: trimmedMessage,
+      });
+
+      setRemoteComments((prev) => mergeMilestoneComments(prev, [saved]));
+      setCommentText('');
+      setActiveComposerMilestoneId(null);
+      setJustPostedMilestoneId(milestoneId);
+      setTimeout(() => {
+        setJustPostedMilestoneId((curr) => (curr === milestoneId ? null : curr));
+      }, 2500);
+    } catch {
+      setCommentError('Unable to save comment right now. Please try again.');
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const formatCommentDate = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso.split('T')[0] || '';
+    return d.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const getFeedbackLabel = (type: MilestoneFeedbackType) => {
+    if (type === 'approved') {
+      return { text: 'Approved', className: 'text-emerald-700' };
+    }
+    if (type === 'question') {
+      return { text: 'Question', className: 'text-amber-700' };
+    }
+    return { text: 'Feedback', className: 'text-slate-500' };
   };
 
   const chartData =
@@ -91,7 +233,7 @@ export const ClientProgressView: React.FC<ClientProgressViewProps> = ({
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-semibold whitespace-nowrap">Client Portal Preview</span>
             <span className="text-slate-400 truncate hidden sm:inline">
-              This is the exact read-only view your client sees (internal costs and budgets are hidden).
+              This is the exact client view with milestone feedback enabled (internal costs and budgets are hidden).
             </span>
           </div>
           <button
@@ -345,13 +487,28 @@ export const ClientProgressView: React.FC<ClientProgressViewProps> = ({
             )}
           </section>
 
-          {/* Milestones Roadmap */}
+          {/* Milestones Roadmap + Client Comments */}
           <section id="milestones" className="bg-white border border-slate-200/80 rounded-2xl p-7">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-[#0A0A0A]">Milestone Deliverables</h2>
-              <span className="text-xs text-slate-400 mono-num">
-                {completedMilestones}/{totalMilestones} Complete
-              </span>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-[#0A0A0A]">Milestone Deliverables</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Review deliverables and leave feedback on specific milestones
+                </p>
+              </div>
+              <div className="text-xs text-slate-400 mono-num whitespace-nowrap shrink-0">
+                <span>
+                  {completedMilestones}/{totalMilestones} Complete
+                </span>
+                {allComments.length > 0 && (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    <span className="text-slate-600 font-medium">
+                      {allComments.length} {allComments.length === 1 ? 'note' : 'notes'}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
 
             {totalMilestones === 0 ? (
@@ -360,42 +517,215 @@ export const ClientProgressView: React.FC<ClientProgressViewProps> = ({
               </p>
             ) : (
               <div className="divide-y divide-slate-100">
-                {project.milestones.map((m) => (
-                  <div key={m.id} className="py-3.5 first:pt-0 last:pb-0 flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2.5">
-                      {m.completed ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                      ) : (
-                        <Circle className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" />
-                      )}
-                      <div>
-                        <div
-                          className={`text-xs font-medium ${
-                            m.completed ? 'text-slate-900' : 'text-slate-700'
+                {project.milestones.map((m) => {
+                  const mComments = commentsByMilestone[m.id] || [];
+                  const isComposerOpen = activeComposerMilestoneId === m.id;
+                  const showJustPosted = justPostedMilestoneId === m.id;
+
+                  return (
+                    <div key={m.id} className="py-4 first:pt-0 last:pb-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5 min-w-0">
+                          {m.completed ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                          ) : (
+                            <Circle className="w-4 h-4 text-slate-300 shrink-0 mt-0.5" />
+                          )}
+                          <div className="min-w-0">
+                            <div
+                              className={`text-xs font-medium ${
+                                m.completed ? 'text-slate-900' : 'text-slate-700'
+                              }`}
+                            >
+                              {m.title}
+                            </div>
+                            <div className="text-[11px] text-slate-400 mt-0.5 mono-num flex items-center flex-wrap gap-1.5">
+                              <Calendar className="w-3 h-3 shrink-0" />
+                              <span>
+                                {m.completed && m.completed_at
+                                  ? `Delivered ${m.completed_at}`
+                                  : `Target ${m.target_date}`}
+                              </span>
+                              <span aria-hidden="true">·</span>
+                              <span className={m.completed ? 'text-emerald-700 font-medium' : 'text-slate-400'}>
+                                {m.completed ? 'Completed' : 'Scheduled'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenComposer(m.id)}
+                          aria-expanded={isComposerOpen}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
+                            isComposerOpen
+                              ? 'bg-black text-white border-black'
+                              : 'bg-white border-slate-200/90 text-slate-600 hover:text-[#0A0A0A] hover:border-slate-300'
                           }`}
                         >
-                          {m.title}
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5 mono-num flex items-center gap-1.5">
-                          <Calendar className="w-3 h-3" />
-                          <span>
-                            {m.completed && m.completed_at
-                              ? `Delivered ${m.completed_at}`
-                              : `Target ${m.target_date}`}
+                          <MessageSquare className="w-3 h-3" />
+                          <span className="mono-num">
+                            {mComments.length > 0 ? mComments.length : 'Feedback'}
                           </span>
-                        </div>
+                        </button>
                       </div>
-                    </div>
 
-                    <span
-                      className={`text-[11px] font-medium shrink-0 ${
-                        m.completed ? 'text-emerald-700' : 'text-slate-400'
-                      }`}
-                    >
-                      {m.completed ? 'Completed' : 'Scheduled'}
-                    </span>
-                  </div>
-                ))}
+                      {showJustPosted && (
+                        <div className="mt-2.5 ml-6 text-[11px] font-medium text-emerald-700 flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Feedback added to this milestone</span>
+                        </div>
+                      )}
+
+                      {/* Existing Comments Thread for this Milestone */}
+                      {mComments.length > 0 && (
+                        <div className="mt-3 ml-6 space-y-2 border-l-2 border-slate-100 pl-3.5">
+                          {mComments.map((c) => {
+                            const labelMeta = getFeedbackLabel(c.feedback_type);
+                            return (
+                              <div
+                                key={c.id}
+                                className="bg-slate-50/80 border border-slate-200/70 rounded-xl px-3.5 py-2.5"
+                              >
+                                <div className="flex items-center justify-between gap-2 text-[11px] mb-1">
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                                    <span className="font-semibold text-[#0A0A0A] truncate">
+                                      {c.author_name}
+                                    </span>
+                                    {c.author_role === 'owner' && (
+                                      <>
+                                        <span className="text-slate-300" aria-hidden="true">·</span>
+                                        <span className="text-slate-500 font-medium">Team</span>
+                                      </>
+                                    )}
+                                    <span className="text-slate-300" aria-hidden="true">·</span>
+                                    <span className={`font-medium ${labelMeta.className}`}>
+                                      {labelMeta.text}
+                                    </span>
+                                  </div>
+                                  <span className="text-slate-400 mono-num shrink-0">
+                                    {formatCommentDate(c.created_at)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                  {c.message}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Inline Feedback / Comment Composer */}
+                      {isComposerOpen && (
+                        <form
+                          onSubmit={(e) => handleSubmitComment(e, m.id)}
+                          className="mt-3 ml-6 bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-3"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <input
+                              type="text"
+                              value={authorName}
+                              onChange={(e) => {
+                                setAuthorName(e.target.value);
+                                if (commentError) setCommentError(null);
+                              }}
+                              placeholder="Your name"
+                              maxLength={80}
+                              className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-[#0A0A0A] placeholder:text-slate-400 focus:outline-none focus:border-black"
+                            />
+
+                            <div
+                              role="group"
+                              aria-label="Feedback category"
+                              className="inline-flex items-center bg-slate-200/70 p-0.5 rounded-lg self-start sm:self-auto"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setFeedbackType('feedback')}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                                  feedbackType === 'feedback'
+                                    ? 'bg-white text-[#0A0A0A] shadow-2xs'
+                                    : 'text-slate-600 hover:text-[#0A0A0A]'
+                                }`}
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                <span>Feedback</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFeedbackType('approved')}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                                  feedbackType === 'approved'
+                                    ? 'bg-white text-emerald-700 shadow-2xs'
+                                    : 'text-slate-600 hover:text-[#0A0A0A]'
+                                }`}
+                              >
+                                <ThumbsUp className="w-3 h-3" />
+                                <span>Approve</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setFeedbackType('question')}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                                  feedbackType === 'question'
+                                    ? 'bg-white text-amber-700 shadow-2xs'
+                                    : 'text-slate-600 hover:text-[#0A0A0A]'
+                                }`}
+                              >
+                                <HelpCircle className="w-3 h-3" />
+                                <span>Question</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <textarea
+                            rows={2}
+                            value={commentText}
+                            onChange={(e) => {
+                              setCommentText(e.target.value);
+                              if (commentError) setCommentError(null);
+                            }}
+                            maxLength={1500}
+                            placeholder={`Share feedback, sign-off notes, or questions on "${m.title}"...`}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-[#0A0A0A] placeholder:text-slate-400 focus:outline-none focus:border-black resize-y"
+                          />
+
+                          {commentError && (
+                            <p className="text-[11px] text-rose-600 font-medium">{commentError}</p>
+                          )}
+
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-slate-400">
+                              Saved directly to milestone feedback
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveComposerMilestoneId(null);
+                                  setCommentError(null);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-600 hover:text-[#0A0A0A] cursor-pointer whitespace-nowrap shrink-0"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={isSubmittingComment}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-black hover:bg-slate-800 disabled:opacity-50 text-white text-[11px] font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                              >
+                                <Send className="w-3 h-3" />
+                                <span>{isSubmittingComment ? 'Posting...' : 'Post Feedback'}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -432,7 +762,7 @@ export const ClientProgressView: React.FC<ClientProgressViewProps> = ({
         {/* Quiet Client Portal Footer */}
         {!embedded && (
           <footer className="pt-2 pb-6 text-center text-xs text-slate-400">
-            <span>Shared read-only project progress view</span>
+            <span>Shared project progress portal</span>
             <span aria-hidden="true"> · </span>
             <span className="mono-num">Generated {shared_at.split('T')[0]}</span>
           </footer>

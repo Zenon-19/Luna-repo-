@@ -1,10 +1,53 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
+import { randomUUID } from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+const COMMENTS_DATA_DIR = path.resolve(process.cwd(), '.data');
+const COMMENTS_STORE_PATH = path.resolve(COMMENTS_DATA_DIR, 'milestone-comments.json');
+const SAFE_ID_REGEX = /^[a-zA-Z0-9_-]{1,120}$/;
+const ALLOWED_FEEDBACK_TYPES = new Set(['feedback', 'approved', 'question']);
+const ALLOWED_AUTHOR_ROLES = new Set(['client', 'owner']);
+
+interface StoredMilestoneComment {
+  id: string;
+  project_id: string;
+  milestone_id: string;
+  author_name: string;
+  author_role: 'client' | 'owner';
+  feedback_type: 'feedback' | 'approved' | 'question';
+  message: string;
+  created_at: string;
+}
+
+let commentsWriteQueue: Promise<void> = Promise.resolve();
+
+async function readAllMilestoneComments(): Promise<Record<string, StoredMilestoneComment[]>> {
+  try {
+    const raw = await fs.promises.readFile(COMMENTS_STORE_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, StoredMilestoneComment[]>;
+    }
+    return {};
+  } catch (err: any) {
+    if (err && err.code === 'ENOENT') return {};
+    console.error('Error reading milestone comments store:', err);
+    return {};
+  }
+}
+
+async function writeAllMilestoneComments(
+  store: Record<string, StoredMilestoneComment[]>
+): Promise<void> {
+  await fs.promises.mkdir(COMMENTS_DATA_DIR, { recursive: true });
+  await fs.promises.writeFile(COMMENTS_STORE_PATH, JSON.stringify(store, null, 2), 'utf8');
+}
 
 let aiClient: GoogleGenAI | null = null;
 
@@ -335,6 +378,118 @@ ${JSON.stringify(projects, null, 2)}
     } catch (err) {
       console.error('Error in /api/luna/create-project:', err);
       res.json(generateHeuristicNewProject(req.body.prompt || ''));
+    }
+  });
+
+  // 5. Client & Team Milestone Comments Persistence
+  app.get('/api/projects/:projectId/milestone-comments', async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      if (!projectId || !SAFE_ID_REGEX.test(projectId)) {
+        res.status(400).json({ error: 'Invalid project identifier' });
+        return;
+      }
+
+      const store = await readAllMilestoneComments();
+      const comments = Array.isArray(store[projectId]) ? store[projectId] : [];
+      res.json({ comments });
+    } catch (err) {
+      console.error('Error loading milestone comments:', err);
+      res.status(500).json({ error: 'Failed to load milestone comments' });
+    }
+  });
+
+  app.post('/api/projects/:projectId/milestone-comments', async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      if (!projectId || !SAFE_ID_REGEX.test(projectId)) {
+        res.status(400).json({ error: 'Invalid project identifier' });
+        return;
+      }
+
+      const { milestone_id, author_name, message, feedback_type, author_role } = req.body || {};
+
+      if (typeof milestone_id !== 'string' || !SAFE_ID_REGEX.test(milestone_id)) {
+        res.status(400).json({ error: 'Valid milestone_id is required' });
+        return;
+      }
+
+      const cleanAuthor = typeof author_name === 'string' ? author_name.trim().slice(0, 80) : '';
+      if (!cleanAuthor) {
+        res.status(400).json({ error: 'Author name is required' });
+        return;
+      }
+
+      const cleanMessage = typeof message === 'string' ? message.trim().slice(0, 1500) : '';
+      if (!cleanMessage) {
+        res.status(400).json({ error: 'Comment message is required' });
+        return;
+      }
+
+      const safeFeedbackType: 'feedback' | 'approved' | 'question' =
+        typeof feedback_type === 'string' && ALLOWED_FEEDBACK_TYPES.has(feedback_type)
+          ? (feedback_type as 'feedback' | 'approved' | 'question')
+          : 'feedback';
+
+      const safeAuthorRole: 'client' | 'owner' =
+        typeof author_role === 'string' && ALLOWED_AUTHOR_ROLES.has(author_role)
+          ? (author_role as 'client' | 'owner')
+          : 'client';
+
+      const newComment: StoredMilestoneComment = {
+        id: `mc-${randomUUID()}`,
+        project_id: projectId,
+        milestone_id,
+        author_name: cleanAuthor,
+        author_role: safeAuthorRole,
+        feedback_type: safeFeedbackType,
+        message: cleanMessage,
+        created_at: new Date().toISOString(),
+      };
+
+      const writeOp = commentsWriteQueue.then(async () => {
+        const store = await readAllMilestoneComments();
+        const existing = Array.isArray(store[projectId]) ? store[projectId] : [];
+        const updated = [...existing, newComment].slice(-500);
+        store[projectId] = updated;
+        await writeAllMilestoneComments(store);
+      });
+      commentsWriteQueue = writeOp.catch(() => {});
+      await writeOp;
+
+      res.status(201).json({ comment: newComment });
+    } catch (err) {
+      console.error('Error saving milestone comment:', err);
+      res.status(500).json({ error: 'Failed to save milestone comment' });
+    }
+  });
+
+  app.delete('/api/projects/:projectId/milestone-comments/:commentId', async (req, res) => {
+    try {
+      const { projectId, commentId } = req.params;
+      if (
+        !projectId ||
+        !SAFE_ID_REGEX.test(projectId) ||
+        !commentId ||
+        !SAFE_ID_REGEX.test(commentId)
+      ) {
+        res.status(400).json({ error: 'Invalid identifier' });
+        return;
+      }
+
+      const writeOp = commentsWriteQueue.then(async () => {
+        const store = await readAllMilestoneComments();
+        const existing = Array.isArray(store[projectId]) ? store[projectId] : [];
+        store[projectId] = existing.filter((c) => c.id !== commentId);
+        await writeAllMilestoneComments(store);
+      });
+      commentsWriteQueue = writeOp.catch(() => {});
+      await writeOp;
+
+      res.json({ deleted: true });
+    } catch (err) {
+      console.error('Error deleting milestone comment:', err);
+      res.status(500).json({ error: 'Failed to delete milestone comment' });
     }
   });
 
