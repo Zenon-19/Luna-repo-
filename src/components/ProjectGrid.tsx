@@ -11,7 +11,8 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Share2
+  Share2,
+  MessageSquare
 } from 'lucide-react';
 import { Project, ProjectSnapshot, ProjectSortOption } from '../types';
 import { ProjectCard } from './ProjectCard';
@@ -28,6 +29,8 @@ interface ProjectGridProps {
   sortBy?: ProjectSortOption;
   onSortChange?: (sort: ProjectSortOption) => void;
   searchQuery?: string;
+  unreadCommentsByProject?: Record<string, number>;
+  totalCommentsByProject?: Record<string, number>;
   onSelectProject: (project: Project) => void;
   onQuickUpdate: (projectName: string) => void;
   onShareProject?: (project: Project) => void;
@@ -42,6 +45,8 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
   sortBy,
   onSortChange,
   searchQuery = '',
+  unreadCommentsByProject = {},
+  totalCommentsByProject = {},
   onSelectProject,
   onQuickUpdate,
   onShareProject,
@@ -85,6 +90,8 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
             snapshots={snapshots}
             currency={currency}
             searchQuery={searchQuery}
+            totalCommentsCount={totalCommentsByProject[project.id] || 0}
+            unreadCommentsCount={unreadCommentsByProject[project.id] || 0}
             onClick={() => onSelectProject(project)}
             onQuickUpdate={onQuickUpdate}
             onShare={onShareProject}
@@ -195,6 +202,12 @@ export const ProjectGrid: React.FC<ProjectGridProps> = ({
                                 ? `Over Budget (${budget.utilizationPercentage}%)`
                                 : `Budget ${budget.utilizationPercentage}%`}
                             </span>
+                          </span>
+                        )}
+                        {(unreadCommentsByProject[p.id] || 0) > 0 && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0A0A0A] mono-num">
+                            <MessageSquare className="w-3 h-3 text-slate-500" />
+                            <span>{unreadCommentsByProject[p.id]} new</span>
                           </span>
                         )}
                       </div>

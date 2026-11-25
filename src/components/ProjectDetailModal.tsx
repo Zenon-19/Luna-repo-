@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   Sparkles,
@@ -21,9 +21,22 @@ import {
   User,
   AlertTriangle,
   Share2,
-  Send
+  Send,
+  Edit3,
+  Trash2,
+  Archive,
+  Save
 } from 'lucide-react';
-import { Project, ProjectSnapshot, ProjectUpdateRecord, Milestone, MilestoneComment } from '../types';
+import {
+  Project,
+  ProjectCategory,
+  ProjectStage,
+  ProjectStatus,
+  ProjectSnapshot,
+  ProjectUpdateRecord,
+  Milestone,
+  MilestoneComment,
+} from '../types';
 import { formatCurrency, formatExactCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
 import { checkProjectStagnation } from '../utils/alerts';
 import { monitorProjectBudget } from '../utils/budget';
@@ -33,14 +46,53 @@ import {
   mergeMilestoneComments,
 } from '../services/api';
 
+type ModalTab = 'overview' | 'progress' | 'financials' | 'milestones' | 'audit';
+
+const PROJECT_CATEGORIES: ProjectCategory[] = [
+  'SaaS',
+  'Agency / Client',
+  'AI & ML',
+  'Fintech',
+  'Mobile App',
+  'Developer Tools',
+  'E-commerce',
+  'Infrastructure',
+  'Internal Tool',
+];
+
+const PROJECT_STAGES: ProjectStage[] = [
+  'Idea',
+  'Design & Spec',
+  'MVP',
+  'Development',
+  'Beta Testing',
+  'Launch',
+  'Scaling',
+  'Delivered',
+  'Production',
+  'Completed',
+];
+
+const PROJECT_STATUSES: { value: ProjectStatus; label: string }[] = [
+  { value: 'active', label: 'Active' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'on_hold', label: 'On Hold' },
+  { value: 'archived', label: 'Archived' },
+];
+
 interface ProjectDetailModalProps {
   project: Project;
   snapshots: ProjectSnapshot[];
   updateRecords: ProjectUpdateRecord[];
   currency: string;
+  initialTab?: ModalTab;
+  focusedMilestoneId?: string | null;
   onClose: () => void;
   onUpdateMilestone: (projectId: string, milestoneId: string, completed: boolean) => void;
   onAddMilestone: (projectId: string, title: string, targetDate: string) => void;
+  onUpdateProject?: (projectId: string, updatedFields: Partial<Project>) => void;
+  onDeleteProject?: (projectId: string) => void;
+  onFeedbackRead?: (commentIds: string[]) => void;
   onQuickUpdate: (projectName: string) => void;
   onExportAuditTrail?: (projectId: string) => void;
   onShareProject?: (project: Project) => void;
@@ -51,16 +103,42 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   snapshots,
   updateRecords,
   currency,
+  initialTab = 'overview',
+  focusedMilestoneId = null,
   onClose,
   onUpdateMilestone,
   onAddMilestone,
+  onUpdateProject,
+  onDeleteProject,
+  onFeedbackRead,
   onQuickUpdate,
   onExportAuditTrail,
   onShareProject,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'progress' | 'financials' | 'milestones' | 'audit'>(
-    'overview'
-  );
+  const [activeTab, setActiveTab] = useState<ModalTab>(initialTab);
+  const [isEditing, setIsEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Edit form controlled state
+  const [editName, setEditName] = useState(project.name);
+  const [editDescription, setEditDescription] = useState(project.description);
+  const [editCategory, setEditCategory] = useState<ProjectCategory>(project.category);
+  const [editStatus, setEditStatus] = useState<ProjectStatus>(project.status);
+  const [editStage, setEditStage] = useState<ProjectStage>(project.stage);
+  const [editOwner, setEditOwner] = useState(project.owner);
+  const [editProgress, setEditProgress] = useState(String(project.progress_percentage));
+  const [editHealthScore, setEditHealthScore] = useState(String(project.health_score));
+  const [editProjectValue, setEditProjectValue] = useState(String(project.project_value));
+  const [editRealizedValue, setEditRealizedValue] = useState(String(project.realized_value));
+  const [editCostToDate, setEditCostToDate] = useState(String(project.cost_to_date));
+  const [editStartDate, setEditStartDate] = useState(project.start_date);
+  const [editTargetDate, setEditTargetDate] = useState(project.target_completion_date);
+  const [editTags, setEditTags] = useState(project.tags.join(', '));
+  const [editTechStack, setEditTechStack] = useState((project.tech_stack || []).join(', '));
+  const [editArchitecture, setEditArchitecture] = useState(project.architecture || '');
+  const [editResults, setEditResults] = useState((project.business_signals || []).join('\n'));
+
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
   const [newMilestoneDate, setNewMilestoneDate] = useState('');
   const [isAddingMilestone, setIsAddingMilestone] = useState(false);
@@ -68,6 +146,34 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [replyingMilestoneId, setReplyingMilestoneId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isSendingReply, setIsSendingReply] = useState(false);
+
+  const milestoneRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab, project.id]);
+
+  useEffect(() => {
+    setEditName(project.name);
+    setEditDescription(project.description);
+    setEditCategory(project.category);
+    setEditStatus(project.status);
+    setEditStage(project.stage);
+    setEditOwner(project.owner);
+    setEditProgress(String(project.progress_percentage));
+    setEditHealthScore(String(project.health_score));
+    setEditProjectValue(String(project.project_value));
+    setEditRealizedValue(String(project.realized_value));
+    setEditCostToDate(String(project.cost_to_date));
+    setEditStartDate(project.start_date);
+    setEditTargetDate(project.target_completion_date);
+    setEditTags(project.tags.join(', '));
+    setEditTechStack((project.tech_stack || []).join(', '));
+    setEditArchitecture(project.architecture || '');
+    setEditResults((project.business_signals || []).join('\n'));
+    setConfirmDelete(false);
+    setEditError(null);
+  }, [project]);
 
   useEffect(() => {
     let active = true;
@@ -96,6 +202,113 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     });
     return grouped;
   }, [allMilestoneComments]);
+
+  // Mark client comments read when viewing the Milestones tab
+  useEffect(() => {
+    if (activeTab === 'milestones' && !isEditing && onFeedbackRead) {
+      const clientCommentIds = allMilestoneComments
+        .filter((c) => c.author_role === 'client')
+        .map((c) => c.id);
+      if (clientCommentIds.length > 0) {
+        onFeedbackRead(clientCommentIds);
+      }
+    }
+  }, [activeTab, isEditing, allMilestoneComments, onFeedbackRead]);
+
+  // Scroll focused milestone into view when deep-linked from Feedback Inbox
+  useEffect(() => {
+    if (activeTab === 'milestones' && !isEditing && focusedMilestoneId) {
+      const el = milestoneRefs.current[focusedMilestoneId];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [activeTab, isEditing, focusedMilestoneId]);
+
+  const handleSaveEdits = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onUpdateProject) return;
+
+    const cleanName = editName.trim();
+    if (!cleanName) {
+      setEditError('Project name is required.');
+      return;
+    }
+
+    const parsedProgress = Number(editProgress);
+    const parsedHealth = Number(editHealthScore);
+    const parsedValue = Number(editProjectValue);
+    const parsedRealized = Number(editRealizedValue);
+    const parsedCost = Number(editCostToDate);
+
+    if (
+      Number.isNaN(parsedProgress) ||
+      Number.isNaN(parsedHealth) ||
+      Number.isNaN(parsedValue) ||
+      Number.isNaN(parsedRealized) ||
+      Number.isNaN(parsedCost)
+    ) {
+      setEditError('Numeric fields must contain valid numbers.');
+      return;
+    }
+
+    if (parsedValue < 0 || parsedRealized < 0 || parsedCost < 0) {
+      setEditError('Project value, realized value, and cost to date cannot be negative.');
+      return;
+    }
+
+    const clampedProgress = Math.min(100, Math.max(0, Math.round(parsedProgress)));
+    const clampedHealth = Math.min(100, Math.max(0, Math.round(parsedHealth)));
+    const parsedTags = editTags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const parsedTech = editTechStack
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const parsedResults = editResults
+      .split('\n')
+      .map((r) => r.trim())
+      .filter(Boolean);
+
+    const derivedHealthStatus =
+      clampedHealth >= 90
+        ? 'Excellent'
+        : clampedHealth >= 75
+        ? 'Healthy'
+        : clampedHealth >= 60
+        ? 'Attention Required'
+        : clampedHealth >= 40
+        ? 'At Risk'
+        : 'Critical';
+
+    onUpdateProject(project.id, {
+      name: cleanName,
+      slug: cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || project.slug,
+      description: editDescription.trim() || project.description,
+      category: editCategory,
+      status: editStatus,
+      stage: editStage,
+      owner: editOwner.trim() || 'Project Lead',
+      progress_percentage: clampedProgress,
+      health_score: clampedHealth,
+      health_status: derivedHealthStatus,
+      project_value: parsedValue,
+      realized_value: parsedRealized,
+      cost_to_date: parsedCost,
+      start_date: editStartDate || project.start_date,
+      target_completion_date: editTargetDate || project.target_completion_date,
+      tags: parsedTags,
+      tech_stack: parsedTech,
+      architecture: editArchitecture.trim() || undefined,
+      business_signals: parsedResults,
+    });
+
+    setEditError(null);
+    setIsEditing(false);
+    setActiveTab('overview');
+  };
 
   const handleOwnerReply = async (e: React.FormEvent, milestoneId: string) => {
     e.preventDefault();
@@ -126,6 +339,10 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const stageBadge = getStageColor(project.stage);
   const stagnation = checkProjectStagnation(project, snapshots);
   const budget = monitorProjectBudget(project);
+
+  const liveEditCost = Math.max(0, Number(editCostToDate) || 0);
+  const liveEditValue = Math.max(0, Number(editProjectValue) || 0);
+  const liveEditBudgetPct = liveEditValue > 0 ? Math.round((liveEditCost / liveEditValue) * 100) : 0;
 
   const handleCreateMilestone = (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,14 +419,32 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 self-end sm:self-auto">
+          <div className="flex items-center gap-2.5 self-end sm:self-auto flex-wrap">
+            {onUpdateProject && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing((prev) => !prev);
+                  setConfirmDelete(false);
+                  setEditError(null);
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  isEditing
+                    ? 'bg-slate-900 border-slate-900 text-white'
+                    : 'bg-white border-slate-200 hover:border-black text-slate-800 hover:text-black'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{isEditing ? 'Back to Details' : 'Edit'}</span>
+              </button>
+            )}
             {onShareProject && (
               <button
                 onClick={() => {
                   onClose();
                   onShareProject(project);
                 }}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:border-black text-slate-800 hover:text-black text-xs font-semibold shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:border-black text-slate-800 hover:text-black text-xs font-semibold shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>Share Client View</span>
@@ -220,79 +455,436 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 onClose();
                 onQuickUpdate(project.name);
               }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Update with Luna</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-black transition-colors cursor-pointer"
+              aria-label="Close project details"
+              className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-black transition-colors cursor-pointer shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 px-7 sm:px-8 bg-white border-b border-slate-100 overflow-x-auto text-xs font-semibold">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 ${
-              activeTab === 'overview'
-                ? 'border-black text-black'
-                : 'border-transparent text-slate-400 hover:text-black'
-            }`}
-          >
-            Overview & Context
-          </button>
-          <button
-            onClick={() => setActiveTab('progress')}
-            className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 ${
-              activeTab === 'progress'
-                ? 'border-black text-black'
-                : 'border-transparent text-slate-400 hover:text-black'
-            }`}
-          >
-            Progress & Velocity ({project.progress_percentage}%)
-          </button>
-          <button
-            onClick={() => setActiveTab('financials')}
-            className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 ${
-              activeTab === 'financials'
-                ? 'border-black text-black'
-                : 'border-transparent text-slate-400 hover:text-black'
-            }`}
-          >
-            Financials & ROI ({formatCurrency(project.project_value, currency)})
-          </button>
-          <button
-            onClick={() => setActiveTab('milestones')}
-            className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 ${
-              activeTab === 'milestones'
-                ? 'border-black text-black'
-                : 'border-transparent text-slate-400 hover:text-black'
-            }`}
-          >
-            Milestones ({project.milestones.filter((m) => m.completed).length}/{project.milestones.length})
-            {allMilestoneComments.length > 0 ? ` · ${allMilestoneComments.length} Notes` : ''}
-          </button>
-          <button
-            onClick={() => setActiveTab('audit')}
-            className={`py-3.5 border-b-2 transition-all cursor-pointer ${
-              activeTab === 'audit'
-                ? 'border-black text-black'
-                : 'border-transparent text-slate-400 hover:text-black'
-            }`}
-          >
-            Audit Trail ({projectAuditRecords.length} Messages)
-          </button>
-        </div>
+        {/* Navigation Tabs (hidden while editing) */}
+        {!isEditing && (
+          <div className="flex items-center gap-2 px-7 sm:px-8 bg-white border-b border-slate-100 overflow-x-auto text-xs font-semibold">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 whitespace-nowrap shrink-0 ${
+                activeTab === 'overview'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-slate-400 hover:text-black'
+              }`}
+            >
+              Overview & Context
+            </button>
+            <button
+              onClick={() => setActiveTab('progress')}
+              className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 whitespace-nowrap shrink-0 ${
+                activeTab === 'progress'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-slate-400 hover:text-black'
+              }`}
+            >
+              Progress & Velocity ({project.progress_percentage}%)
+            </button>
+            <button
+              onClick={() => setActiveTab('financials')}
+              className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 whitespace-nowrap shrink-0 ${
+                activeTab === 'financials'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-slate-400 hover:text-black'
+              }`}
+            >
+              Financials & ROI ({formatCurrency(project.project_value, currency)})
+            </button>
+            <button
+              onClick={() => setActiveTab('milestones')}
+              className={`py-3.5 border-b-2 transition-all cursor-pointer mr-3 whitespace-nowrap shrink-0 ${
+                activeTab === 'milestones'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-slate-400 hover:text-black'
+              }`}
+            >
+              Milestones ({project.milestones.filter((m) => m.completed).length}/{project.milestones.length})
+              {allMilestoneComments.length > 0 ? ` · ${allMilestoneComments.length} Notes` : ''}
+            </button>
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`py-3.5 border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                activeTab === 'audit'
+                  ? 'border-black text-black'
+                  : 'border-transparent text-slate-400 hover:text-black'
+              }`}
+            >
+              Audit Trail ({projectAuditRecords.length} Messages)
+            </button>
+          </div>
+        )}
 
         {/* Modal Body Content */}
         <div className="p-7 sm:p-8 overflow-y-auto space-y-6">
+          {/* FULL EDIT & LIFECYCLE MODE */}
+          {isEditing && (
+            <form onSubmit={handleSaveEdits} className="space-y-6">
+              <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-[#0A0A0A]">Edit Project Details</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Update identity, delivery schedule, budget metrics, and client outcomes directly.
+                  </p>
+                </div>
+                <span className="text-[11px] text-slate-400 mono-num">Saved locally</span>
+              </div>
+
+              {editError && (
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 font-medium">
+                  {editError}
+                </div>
+              )}
+
+              {/* Identity & Description */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Project Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => {
+                      setEditName(e.target.value);
+                      if (editError) setEditError(null);
+                    }}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Category
+                  </label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value as ProjectCategory)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] focus:outline-none focus:border-black cursor-pointer"
+                  >
+                    {PROJECT_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Project Lead / Owner
+                  </label>
+                  <input
+                    type="text"
+                    value={editOwner}
+                    onChange={(e) => setEditOwner(e.target.value)}
+                    placeholder="Project Lead"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] leading-relaxed focus:outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              {/* Status, Stage & Timeline */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Status
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as ProjectStatus)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] focus:outline-none focus:border-black cursor-pointer"
+                  >
+                    {PROJECT_STATUSES.map((st) => (
+                      <option key={st.value} value={st.value}>
+                        {st.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Stage
+                  </label>
+                  <select
+                    value={editStage}
+                    onChange={(e) => setEditStage(e.target.value as ProjectStage)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] focus:outline-none focus:border-black cursor-pointer"
+                  >
+                    {PROJECT_STAGES.map((stg) => (
+                      <option key={stg} value={stg}>
+                        {stg}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Progress (%)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={editProgress}
+                    onChange={(e) => setEditProgress(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Health Score (0–100)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={editHealthScore}
+                    onChange={(e) => setEditHealthScore(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Target Completion
+                  </label>
+                  <input
+                    type="date"
+                    value={editTargetDate}
+                    onChange={(e) => setEditTargetDate(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              {/* Financials & Budget */}
+              <div className="pt-4 border-t border-slate-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[#0A0A0A]">
+                    Financials & Budget ({currency})
+                  </span>
+                  <span
+                    className={`text-[11px] font-medium mono-num ${
+                      liveEditBudgetPct > 100
+                        ? 'text-rose-700'
+                        : liveEditBudgetPct > 80
+                        ? 'text-amber-700'
+                        : 'text-slate-500'
+                    }`}
+                  >
+                    Budget Utilization: {liveEditBudgetPct}%
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1.5">
+                      Project Value / Budget
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editProjectValue}
+                      onChange={(e) => setEditProjectValue(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none focus:border-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1.5">
+                      Realized Value
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editRealizedValue}
+                      onChange={(e) => setEditRealizedValue(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none focus:border-black"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600 block mb-1.5">
+                      Cost to Date
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={editCostToDate}
+                      onChange={(e) => setEditCostToDate(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none focus:border-black"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tags, Architecture & Client Outcomes */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={editTags}
+                    onChange={(e) => setEditTags(e.target.value)}
+                    placeholder="e.g. CRM, Enterprise, Q4"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Tech Stack (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={editTechStack}
+                    onChange={(e) => setEditTechStack(e.target.value)}
+                    placeholder="e.g. React, TypeScript, Postgres"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Architecture Notes (optional, shared if enabled)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={editArchitecture}
+                    onChange={(e) => setEditArchitecture(e.target.value)}
+                    placeholder="Brief system architecture overview..."
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-mono text-[#0A0A0A] focus:outline-none focus:border-black"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                    Key Results & Outcomes (one per line, shown in Client Portal)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editResults}
+                    onChange={(e) => setEditResults(e.target.value)}
+                    placeholder="Reduced onboarding time by 35%&#10;Launched client reporting portal"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-[#0A0A0A] leading-relaxed focus:outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              {/* Save / Cancel & Lifecycle Controls */}
+              <div className="pt-5 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!onUpdateProject) return;
+                      const nextStatus: ProjectStatus =
+                        project.status === 'archived' ? 'active' : 'archived';
+                      onUpdateProject(project.id, { status: nextStatus });
+                      setIsEditing(false);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-black text-xs font-semibold text-slate-700 hover:text-black transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Archive className="w-3.5 h-3.5" />
+                    <span>{project.status === 'archived' ? 'Restore Active' : 'Archive Project'}</span>
+                  </button>
+
+                  {onDeleteProject && (
+                    confirmDelete ? (
+                      <div className="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-xl px-2.5 py-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onDeleteProject(project.id);
+                            onClose();
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold cursor-pointer whitespace-nowrap shrink-0"
+                        >
+                          Confirm Delete
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(false)}
+                          className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-black cursor-pointer whitespace-nowrap shrink-0"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-xs font-semibold text-rose-700 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete Project</span>
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditError(null);
+                    }}
+                    className="px-4 py-2 rounded-xl border border-slate-200 hover:border-slate-300 text-xs font-semibold text-slate-600 hover:text-black cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-black hover:bg-slate-800 text-white text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Changes</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+
           {/* TAB 1: OVERVIEW */}
-          {activeTab === 'overview' && (
+          {!isEditing && activeTab === 'overview' && (
             <div className="space-y-6">
               {/* Proactive Budget Threshold Warning Banner */}
               {budget.exceedsThreshold && (
@@ -849,11 +1441,17 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 {project.milestones.map((m) => {
                   const mComments = commentsByMilestone[m.id] || [];
                   const isReplying = replyingMilestoneId === m.id;
+                  const isFocused = focusedMilestoneId === m.id;
                   return (
                     <div
                       key={m.id}
+                      ref={(el) => {
+                        milestoneRefs.current[m.id] = el;
+                      }}
                       className={`p-3.5 rounded-2xl border transition-all ${
-                        m.completed
+                        isFocused
+                          ? 'bg-slate-50 border-black ring-1 ring-black/15'
+                          : m.completed
                           ? 'bg-emerald-50/60 border-emerald-200 text-slate-800'
                           : 'bg-white border-slate-100 text-[#0A0A0A] shadow-xs'
                       }`}

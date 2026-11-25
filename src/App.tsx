@@ -31,11 +31,20 @@ import {
   MCPStatus,
   ProjectSortOption,
   ClientSharePayload,
+  FieldChange,
 } from './types';
 import { generatePortfolioInsights } from './services/api';
 import { checkProjectStagnation } from './utils/alerts';
 import { monitorProjectBudget } from './utils/budget';
 import { decodeClientSharePayload } from './utils/clientShare';
+import {
+  PortfolioFeedbackSummary,
+  FeedbackInboxItem,
+  loadPortfolioFeedbackSummary,
+  markCommentIdsAsRead,
+  clearReadCommentIds,
+  getReadCommentIds,
+} from './utils/feedbackInbox';
 
 const DATA_VERSION = 'v7_clean_slate_client_share';
 
@@ -107,6 +116,8 @@ export default function App() {
 
   // Modals & Active selections
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [modalInitialTab, setModalInitialTab] = useState<'overview' | 'progress' | 'financials' | 'milestones' | 'audit'>('overview');
+  const [focusedMilestoneId, setFocusedMilestoneId] = useState<string | null>(null);
   const [shareModalProject, setShareModalProject] = useState<Project | null>(null);
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -118,6 +129,12 @@ export default function App() {
   const [recentRecord, setRecentRecord] = useState<ProjectUpdateRecord | null>(null);
   const [prefillMessage, setPrefillMessage] = useState<string | undefined>(undefined);
   const [isRefreshingInsights, setIsRefreshingInsights] = useState(false);
+  const [feedbackSummary, setFeedbackSummary] = useState<PortfolioFeedbackSummary>({
+    items: [],
+    unreadCount: 0,
+    unreadByProject: {},
+    totalByProject: {},
+  });
 
   const handleOpenExportModal = (config?: {
     initialReportType?: 'portfolio' | 'audit_trail';
@@ -159,6 +176,33 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Refresh client feedback inbox summary
+  const refreshFeedbackSummary = React.useCallback(
+    async (readOverride?: Set<string>) => {
+      const summary = await loadPortfolioFeedbackSummary(projects, readOverride);
+      setFeedbackSummary(summary);
+    },
+    [projects]
+  );
+
+  useEffect(() => {
+    if (shareTokenState.payload || shareTokenState.invalid) return;
+    refreshFeedbackSummary();
+  }, [refreshFeedbackSummary, shareTokenState.payload, shareTokenState.invalid, selectedProject, shareModalProject, previewClientPayload]);
+
+  useEffect(() => {
+    if (shareTokenState.payload || shareTokenState.invalid) return;
+    const onFocusOrStorage = () => {
+      refreshFeedbackSummary();
+    };
+    window.addEventListener('focus', onFocusOrStorage);
+    window.addEventListener('storage', onFocusOrStorage);
+    return () => {
+      window.removeEventListener('focus', onFocusOrStorage);
+      window.removeEventListener('storage', onFocusOrStorage);
+    };
+  }, [refreshFeedbackSummary, shareTokenState.payload, shareTokenState.invalid]);
 
   // Filtered categories list
   const categories = useMemo(() => {
@@ -509,6 +553,133 @@ export default function App() {
     setPrefillMessage(`${projectName} update: `);
   };
 
+  // Manual project editing inside ProjectDetailModal
+  const handleUpdateProject = (projectId: string, updatedFields: Partial<Project>) => {
+    const existing = projects.find((p) => p.id === projectId);
+    if (!existing) return;
+
+    const updatedProject: Project = {
+      ...existing,
+      ...updatedFields,
+      last_updated: new Date().toISOString(),
+      days_since_update: 0,
+    };
+
+    const changes: FieldChange[] = [];
+    if (updatedFields.name && updatedFields.name !== existing.name) {
+      changes.push({ field_name: 'name', label: 'Project Name', old_value: existing.name, new_value: updatedFields.name });
+    }
+    if (updatedFields.status && updatedFields.status !== existing.status) {
+      changes.push({ field_name: 'status', label: 'Status', old_value: existing.status, new_value: updatedFields.status });
+    }
+    if (updatedFields.stage && updatedFields.stage !== existing.stage) {
+      changes.push({ field_name: 'stage', label: 'Stage', old_value: existing.stage, new_value: updatedFields.stage });
+    }
+    if (typeof updatedFields.progress_percentage === 'number' && updatedFields.progress_percentage !== existing.progress_percentage) {
+      changes.push({ field_name: 'progress_percentage', label: 'Progress', old_value: `${existing.progress_percentage}%`, new_value: `${updatedFields.progress_percentage}%` });
+    }
+    if (typeof updatedFields.project_value === 'number' && updatedFields.project_value !== existing.project_value) {
+      changes.push({ field_name: 'project_value', label: 'Project Value', old_value: `${existing.currency}${existing.project_value.toLocaleString()}`, new_value: `${existing.currency}${updatedFields.project_value.toLocaleString()}` });
+    }
+    if (typeof updatedFields.cost_to_date === 'number' && updatedFields.cost_to_date !== existing.cost_to_date) {
+      changes.push({ field_name: 'cost_to_date', label: 'Cost to Date', old_value: `${existing.currency}${existing.cost_to_date.toLocaleString()}`, new_value: `${existing.currency}${updatedFields.cost_to_date.toLocaleString()}` });
+    }
+    if (typeof updatedFields.health_score === 'number' && updatedFields.health_score !== existing.health_score) {
+      changes.push({ field_name: 'health_score', label: 'Health Score', old_value: existing.health_score, new_value: updatedFields.health_score });
+    }
+    if (updatedFields.target_completion_date && updatedFields.target_completion_date !== existing.target_completion_date) {
+      changes.push({ field_name: 'target_completion_date', label: 'Target Completion', old_value: existing.target_completion_date, new_value: updatedFields.target_completion_date });
+    }
+
+    setProjects((prev) => prev.map((p) => (p.id === projectId ? updatedProject : p)));
+    if (selectedProject && selectedProject.id === projectId) {
+      setSelectedProject(updatedProject);
+    }
+
+    if (
+      updatedProject.progress_percentage !== existing.progress_percentage ||
+      updatedProject.project_value !== existing.project_value ||
+      updatedProject.health_score !== existing.health_score
+    ) {
+      const snap: ProjectSnapshot = {
+        id: `snap-${Date.now()}`,
+        project_id: projectId,
+        snapshot_date: new Date().toISOString().split('T')[0],
+        progress_percentage: updatedProject.progress_percentage,
+        project_value: updatedProject.project_value,
+        health_score: updatedProject.health_score,
+        performance_score: updatedProject.performance_score,
+        note: 'Manual project details update',
+      };
+      setSnapshots((prev) => [snap, ...prev]);
+    }
+
+    const editRecord: ProjectUpdateRecord = {
+      id: `rec-${Date.now()}`,
+      project_id: projectId,
+      project_name: updatedProject.name,
+      timestamp: new Date().toISOString(),
+      original_message: 'Manual workspace edit',
+      ai_summary:
+        changes.length > 0
+          ? `Updated ${updatedProject.name}: ${changes.map((c) => `${c.label} → ${c.new_value}`).join(', ')}.`
+          : `Updated project details for ${updatedProject.name}.`,
+      confidence_score: 1,
+      changes,
+      business_signals: [],
+      user_confirmed: true,
+    };
+    setUpdateRecords((prev) => [editRecord, ...prev]);
+  };
+
+  // Delete project cleanly from localStorage state
+  const handleDeleteProject = (projectId: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+    setSnapshots((prev) => prev.filter((s) => s.project_id !== projectId));
+    setUpdateRecords((prev) => prev.filter((r) => r.project_id !== projectId));
+    if (selectedProject && selectedProject.id === projectId) {
+      setSelectedProject(null);
+    }
+    if (shareModalProject && shareModalProject.id === projectId) {
+      setShareModalProject(null);
+    }
+    try {
+      localStorage.removeItem(`luna_milestone_comments_v1_${projectId}`);
+    } catch {
+      // Ignore
+    }
+  };
+
+  const handleMarkFeedbackIdsRead = React.useCallback(
+    (commentIds: string[]) => {
+      if (commentIds.length === 0) return;
+      const currentRead = getReadCommentIds();
+      const hasNewRead = commentIds.some((id) => !currentRead.has(id));
+      if (!hasNewRead) return;
+      const nextRead = markCommentIdsAsRead(commentIds);
+      refreshFeedbackSummary(nextRead);
+    },
+    [refreshFeedbackSummary]
+  );
+
+  const handleMarkAllFeedbackRead = () => {
+    const allIds = feedbackSummary.items.map((item) => item.id);
+    if (allIds.length === 0) return;
+    const nextRead = markCommentIdsAsRead(allIds);
+    refreshFeedbackSummary(nextRead);
+  };
+
+  const handleSelectFeedbackItem = (item: FeedbackInboxItem) => {
+    const nextRead = markCommentIdsAsRead([item.id]);
+    refreshFeedbackSummary(nextRead);
+    const target = projects.find((p) => p.id === item.project_id);
+    if (target) {
+      setModalInitialTab('milestones');
+      setFocusedMilestoneId(item.milestone_id);
+      setSelectedProject(target);
+    }
+  };
+
   const handleClearWorkspace = () => {
     setProjects([]);
     setSnapshots([]);
@@ -520,6 +691,7 @@ export default function App() {
     setSelectedCategory('All');
     setSelectedStatus('all');
     setSearchQuery('');
+    clearReadCommentIds();
   };
 
   // 1. Standalone Shared Client Portal View (?share=...)
@@ -584,6 +756,10 @@ export default function App() {
         categories={categories}
         projectCount={projects.length}
         onClearWorkspace={handleClearWorkspace}
+        feedbackItems={feedbackSummary.items}
+        unreadFeedbackCount={feedbackSummary.unreadCount}
+        onSelectFeedback={handleSelectFeedbackItem}
+        onMarkAllFeedbackRead={handleMarkAllFeedbackRead}
       />
 
       {/* Main App Body Container */}
@@ -663,7 +839,11 @@ export default function App() {
                 updateRecords={updateRecords}
                 onSelectProjectName={(name) => {
                   const found = projects.find((p) => p.name.toLowerCase() === name.toLowerCase());
-                  if (found) setSelectedProject(found);
+                  if (found) {
+                    setModalInitialTab('overview');
+                    setFocusedMilestoneId(null);
+                    setSelectedProject(found);
+                  }
                 }}
                 onExportAuditTrail={() =>
                   handleOpenExportModal({ initialReportType: 'audit_trail', initialProjectId: 'all' })
@@ -678,7 +858,13 @@ export default function App() {
                 sortBy={sortBy}
                 onSortChange={setSortBy}
                 searchQuery={searchQuery}
-                onSelectProject={(p) => setSelectedProject(p)}
+                unreadCommentsByProject={feedbackSummary.unreadByProject}
+                totalCommentsByProject={feedbackSummary.totalByProject}
+                onSelectProject={(p) => {
+                  setModalInitialTab('overview');
+                  setFocusedMilestoneId(null);
+                  setSelectedProject(p);
+                }}
                 onQuickUpdate={handleQuickUpdate}
                 onShareProject={(p) => setShareModalProject(p)}
                 onOpenNewProject={() => setIsNewProjectModalOpen(true)}
@@ -706,9 +892,17 @@ export default function App() {
           snapshots={snapshots}
           updateRecords={updateRecords}
           currency={currency}
-          onClose={() => setSelectedProject(null)}
+          initialTab={modalInitialTab}
+          focusedMilestoneId={focusedMilestoneId}
+          onClose={() => {
+            setSelectedProject(null);
+            setFocusedMilestoneId(null);
+          }}
           onUpdateMilestone={handleUpdateMilestone}
           onAddMilestone={handleAddMilestone}
+          onUpdateProject={handleUpdateProject}
+          onDeleteProject={handleDeleteProject}
+          onFeedbackRead={handleMarkFeedbackIdsRead}
           onQuickUpdate={handleQuickUpdate}
           onExportAuditTrail={(projectId) =>
             handleOpenExportModal({ initialReportType: 'audit_trail', initialProjectId: projectId })

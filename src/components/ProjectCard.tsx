@@ -12,7 +12,8 @@ import {
   AlertTriangle,
   GitBranch,
   Calendar,
-  Share2
+  Share2,
+  MessageSquare
 } from 'lucide-react';
 import { Project, ProjectSnapshot } from '../types';
 import { formatCurrency, getHealthBadgeColor, getStageColor, timeAgo } from '../utils/formatters';
@@ -25,6 +26,8 @@ interface ProjectCardProps {
   snapshots?: ProjectSnapshot[];
   currency: string;
   searchQuery?: string;
+  totalCommentsCount?: number;
+  unreadCommentsCount?: number;
   onClick: () => void;
   onQuickUpdate: (projectName: string) => void;
   onShare?: (project: Project) => void;
@@ -35,6 +38,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   snapshots = [],
   currency,
   searchQuery = '',
+  totalCommentsCount = 0,
+  unreadCommentsCount = 0,
   onClick,
   onQuickUpdate,
   onShare,
@@ -354,6 +359,27 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             <span className="hidden sm:flex items-center gap-1 text-xs text-slate-400">
               <GitBranch className="w-3 h-3" />
               {project.github_commits_count}
+            </span>
+          )}
+
+          {totalCommentsCount > 0 && (
+            <span
+              className={`flex items-center gap-1 text-[11px] mono-num ${
+                unreadCommentsCount > 0 ? 'text-[#0A0A0A] font-semibold' : 'text-slate-500 font-medium'
+              }`}
+              title={
+                unreadCommentsCount > 0
+                  ? `${unreadCommentsCount} unread client feedback note(s)`
+                  : `${totalCommentsCount} milestone comment(s)`
+              }
+            >
+              <MessageSquare className="w-3 h-3 text-slate-500" />
+              <span>{totalCommentsCount}</span>
+              {unreadCommentsCount > 0 && (
+                <span className="text-[10px] font-bold text-[#0A0A0A]">
+                  · {unreadCommentsCount} new
+                </span>
+              )}
             </span>
           )}
 

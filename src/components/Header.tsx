@@ -14,6 +14,8 @@ import {
   Cpu,
   Trash2
 } from 'lucide-react';
+import { FeedbackInboxButton } from './FeedbackInboxButton';
+import { FeedbackInboxItem } from '../utils/feedbackInbox';
 
 interface HeaderProps {
   searchQuery: string;
@@ -31,6 +33,10 @@ interface HeaderProps {
   categories: string[];
   projectCount?: number;
   onClearWorkspace?: () => void;
+  feedbackItems?: FeedbackInboxItem[];
+  unreadFeedbackCount?: number;
+  onSelectFeedback?: (item: FeedbackInboxItem) => void;
+  onMarkAllFeedbackRead?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -49,6 +55,10 @@ export const Header: React.FC<HeaderProps> = ({
   categories,
   projectCount = 0,
   onClearWorkspace,
+  feedbackItems = [],
+  unreadFeedbackCount = 0,
+  onSelectFeedback,
+  onMarkAllFeedbackRead,
 }) => {
   const [confirmClear, setConfirmClear] = React.useState(false);
   return (
@@ -226,6 +236,16 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="hidden xl:inline font-semibold">Clear All</span>
               </button>
             )
+          )}
+
+          {/* Client Feedback Inbox */}
+          {(projectCount > 0 || feedbackItems.length > 0) && onSelectFeedback && onMarkAllFeedbackRead && (
+            <FeedbackInboxButton
+              items={feedbackItems}
+              unreadCount={unreadFeedbackCount}
+              onSelectFeedback={onSelectFeedback}
+              onMarkAllRead={onMarkAllFeedbackRead}
+            />
           )}
 
           {/* Export Report */}
